@@ -113,7 +113,7 @@ struct pcb_t *p_next, /* pointer to next entry */
 /* process status information */
 state_t      p_s; /* processor state */
 cpu_t        p_time; /* cpu time used by proc */
-int          *psemAdd; /* pointer to sema4 on which process blocked */
+int          *p_semAdd; /* pointer to sema4 on which process blocked */
 
 /* support layer information */
 //support_t *p_supportStruct;

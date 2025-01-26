@@ -35,7 +35,7 @@ pcb_PTR allocPcb ()
     p->p_sib = NULL;
     p->p_s = (struct state_t){};
     p->p_time = 0;
-    p->psemAdd = 0;
+    p->p_semAdd = 0;
 
     return p;
 }
@@ -51,5 +51,59 @@ void initPcbs ()
         pcbFree_h->p_next = static_array[i];
     }
     return;
+    
+}
+
+pcb_PTR mkEmptyProcQ ()
+{
+    pcb_PTR tp = &(struct pcb_t){};
+    return tp;
+}
+
+int emptyProcQ (pcb_PTR tp)
+{
+    if (tp == NULL) return 0;
+    return 1;
+}
+
+void insertProcQ (pcb_PTR *tp, pcb_PTR p)
+{
+    pcb_PTR hp = (*tp)->p_next;
+    (*tp)->p_next = p;
+    p->p_prev = *tp;
+    (*tp) = p;
+    (*tp)->p_next = hp;
+    hp->p_prev = (*tp);
+
+    return;
+}
+
+pcb_PTR removeProcQ (pcb_PTR *tp)
+{
+    //empty
+    if (*tp == NULL)
+        return NULL;
+
+    //one pcb
+    pcb_PTR removed;
+    if ((*tp)->p_next == (*tp))  //
+    {
+        removed = (*tp);
+        (*tp) = NULL;
+        return removed;
+    }
+        
+    removed = (*tp)->p_next;
+    (*tp)->p_next = (*tp)->p_next->p_next;
+    (*tp)->p_next->p_prev = (*tp);
+
+    removed->p_next = NULL;
+    removed->p_prev = NULL;
+    return removed;
+}
+
+pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p)
+{
+    if (*tp == NULL) return p;
     
 }
