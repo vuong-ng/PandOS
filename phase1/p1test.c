@@ -247,7 +247,7 @@ void main() {
 	for (i = 0; i < 10; i++) 
 		freePcb(procp[i]);
 
-	return;
+	
 	/* check ASL */
 	initASL();
 	addokbuf("Initialized active semaphore list   \n");

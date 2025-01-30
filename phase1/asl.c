@@ -1,7 +1,7 @@
 #include "../h/asl.h"
 #include "../h/pcb.h"
 
-int MAXINT;
+int MAXINT = 214748364;
 typedef struct semd_t
 {
     struct semd_t  *s_next;
@@ -10,20 +10,23 @@ typedef struct semd_t
 } semd_t;
 
 /*define a ASL and a list of free semaphore*/  
-semd_t *semd_h;
-semd_t *semdFree_h;
+HIDDEN semd_t *semd_h;
+HIDDEN semd_t *semdFree_h;
 
-static semd_t semdTable[MAXPROC];
 void initASL()
 {
-    /*nitlialize ASL with head and tail*/
-    semd_t* asl_head;
-    semd_t* asl_tail;
+    /*initlialize ASL with head and tail*/
+    static semd_t semdTable[MAXPROC];
+
+    semd_t head;
+    semd_t tail;
+    semd_h = &head;
+    semd_t* asl_tail = &tail;
 
     /*no asl yet -> head points to tail*/ 
-    asl_head->s_next = asl_tail;
-    asl_head->s_semAdd = 0;
-    asl_tail->s_semAdd = MAXINT;
+    semd_h->s_next = asl_tail;
+    semd_h->s_semAdd = 0;
+    asl_tail->s_semAdd = &MAXINT;
 
     semdFree_h = semdTable; /* initialize sendFree list to contain all the elements of the array semdTable*/
 };
@@ -35,7 +38,7 @@ int insertBlocked (int *semAdd, pcb_PTR p) {
     while (curr->s_next) {
         /*if the sem is in asl*/ 
         if (curr->s_semAdd == semAdd){
-            insertProcQ (curr->s_procQ, p);
+            insertProcQ (&(curr->s_procQ), p);
         }
     }
 
@@ -107,13 +110,14 @@ pcb_PTR outBlocked (pcb_PTR p){
     semd_t *curr_sem = semd_h;
     while (curr_sem->s_next) {
         if (curr_sem->s_semAdd == p->p_semAdd){
-            pcb_PTR foundPcb = outProcQ (curr_sem->s_procQ, p);
+            pcb_PTR foundPcb = outProcQ (&(curr_sem->s_procQ), p);
             if (!foundPcb){
                 return NULL;
             }
             return foundPcb;
         }
     }
+    return NULL;
 }
 
 pcb_PTR headBlocked (int *semAdd){
