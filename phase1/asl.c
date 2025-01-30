@@ -2,7 +2,7 @@
 #include "../h/pcb.h"
 
 int MAXINT = 214748364;
-typedef struct semd_t
+typedef struct semd_t  
 {
     struct semd_t  *s_next;
     int            *s_semAdd;
