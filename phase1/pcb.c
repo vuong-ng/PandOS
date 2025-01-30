@@ -3,7 +3,7 @@
 
 HIDDEN pcb_PTR pcbFree_h = NULL;
 
-void freePcb (pcb_PTR p)
+void freePcb (pcb_PTR p)  /*insert head*/
 {
     if (pcbFree_h == NULL){
         pcbFree_h = p;
@@ -45,14 +45,14 @@ pcb_PTR allocPcb ()
     return p;
 }
 
-HIDDEN pcb_t static_array [MAXPROC];
 void initPcbs ()
 {
+    static pcb_t static_array [MAXPROC]; /*static: not deallocated*/
+
     pcbFree_h = &(static_array[MAXPROC - 1]);
     pcbFree_h->p_next = NULL;
     int i = MAXPROC - 1;
     while (i > 0){
-        /* pcbFree_h->p_prev = &static_array[i-1]; */
         pcbFree_h = &static_array[i-1];
         pcbFree_h->p_next = &static_array[i];
         i -= 1;
@@ -119,8 +119,6 @@ pcb_PTR removeProcQ (pcb_PTR *tp)
 
 pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p)
 {
-    /*p guaranteed to be in tp?*/
-
     if (emptyProcQ(*tp)) 
         return NULL;
 
@@ -136,7 +134,7 @@ pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p)
     }
 
     pcb_PTR search = (*tp)->p_next;
-    while(search != *tp)
+    while(search != *tp) /*check if p in tp*/
     {
         if (search == p)
             break;
@@ -174,7 +172,7 @@ int emptyChild (pcb_PTR p)
 
 void insertChild (pcb_PTR prnt, pcb_PTR p)
 {
-    /*insert head or tail?*/
+    /*insert at the head*/
     pcb_PTR first_child = prnt->p_child;
     prnt->p_child = p;
     prnt->p_child->p_sib_left = NULL;
