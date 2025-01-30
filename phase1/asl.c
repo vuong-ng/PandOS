@@ -40,6 +40,7 @@ int insertBlocked (int *semAdd, pcb_PTR p) {
         if (curr->s_semAdd == semAdd){
             insertProcQ (&(curr->s_procQ), p);
         }
+        curr = curr->s_next;
     }
 
     /*if the semaphore address is not in the list*/ 
@@ -68,6 +69,7 @@ int insertBlocked (int *semAdd, pcb_PTR p) {
                 prev->s_next = freeSemd;
                 freeSemd->s_next = curr;
             }
+            curr = curr->s_next;
         }
     }
 
@@ -99,6 +101,7 @@ pcb_PTR removeBlocked (int *semAdd){
             prev_semd = curr_semd;
             curr_semd = curr_semd->s_next;
         }
+        curr_semd = curr_semd->s_next;
     }
 
     return NULL;
@@ -116,6 +119,7 @@ pcb_PTR outBlocked (pcb_PTR p){
             }
             return foundPcb;
         }
+        curr_sem = curr_sem->s_next;
     }
     return NULL;
 }
@@ -127,6 +131,7 @@ pcb_PTR headBlocked (int *semAdd){
             pcb_PTR headPcb = headProcQ(curr_sem->s_procQ);
             return headPcb;
         }
+        curr_sem = curr_sem->s_next;
     }
     return NULL;
 }
