@@ -125,5 +125,12 @@ int          *p_semAdd; /* pointer to sema4 on which process blocked */
 
 typedef pcb_t* pcb_PTR;
 
+typedef struct semd_t  
+{
+    struct semd_t  *s_next;
+    int            *s_semAdd;
+    pcb_PTR         s_procQ;
+} semd_t;
+
 
 #endif
