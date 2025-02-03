@@ -4,7 +4,8 @@ Long Pham
 
 #include "../h/pcb.h"
 
-HIDDEN pcb_PTR pcbFree_h = NULL;
+/*private global variable that points to the head of the pcbFree list*/
+HIDDEN pcb_PTR pcbFree_h = NULL; 
 
 void freePcb (pcb_PTR p)
 /* 
@@ -263,60 +264,90 @@ is pointed to by tp; NULL if the process queue is empty
 
 int emptyChild (pcb_PTR p)
 /* 
-Return TRUE if the pcb pointed to by p has no children. Return
-FALSE otherwise. 
-PARAMETERS:
-RETURN VALUES:
+Check whether pcb pointed by p has any child 
+PARAMETERS: pointer to pcb p
+RETURN VALUES: TRUE if the pcb pointed to by p has no children. FALSE otherwise. 
 */
 {
-    if (p->p_child == NULL) 
+    if (p->p_child == NULL)
+    /*p_child NULL, p has no children*/ 
         return TRUE;
     return FALSE;
 }
 
 
 void insertChild (pcb_PTR prnt, pcb_PTR p)
+/*
+Make the pcb pointed to by p a child of the pcb pointed to by prnt.
+PARAMETERS: pointer to parent pcb prnt, pointer to child pcb p
+RETURN VALUES: void
+*/
 {
-    /*insert at the head*/
-    pcb_PTR first_child = prnt->p_child;
+    /*update p's pointers*/
+    p->p_sib = prnt->p_child;
+    p->p_sib_left = NULL;
+    p->p_prnt = prnt;
+
+    /*update first child to point to p*/
+    if (prnt->p_child != NULL)
+        prnt->p_child->p_sib_left = p;
+
+    /*update first child to be p*/
     prnt->p_child = p;
-    prnt->p_child->p_sib_left = NULL;
-    prnt->p_child->p_sib = first_child;
-    if (first_child != NULL)
-        first_child->p_sib_left = prnt->p_child;
-    
-    prnt->p_child->p_prnt = prnt;
     return;
 }
 
 
 pcb_PTR removeChild (pcb_PTR p)
+/* 
+Make the first child of the pcb pointed to by p no longer a child of p.
+PARAMETERS: pointer to pcb p
+RETURN VALUES: NULL if initially there were no children of p. Otherwise,
+return a pointer to this removed first child pcb. 
+*/
 {
+    pcb_PTR removed;
     if(p->p_child == NULL)
-        return NULL;
+    /*p has no children, return NULL*/
+        removed = NULL;
+    else{
+    /*p has children, extract the first one*/
+        removed = p->p_child;
+        /*update pointer of removed child's sibling*/
+        if (removed->p_sib != NULL)
+            removed->p_sib->p_sib_left = NULL;
+        /*update first child to be removed child's sibling*/
+        p->p_child = removed->p_sib;
 
-    pcb_PTR removed = p->p_child;
-    p->p_child = p->p_child->p_sib;
-    if (p->p_child != NULL)
-        p->p_child->p_sib_left = NULL;
-
-    removed->p_sib = NULL;
-    removed->p_sib_left = NULL;
+        /*reset removed child's pointers*/
+        removed->p_sib = NULL;
+        removed->p_sib_left = NULL;
+    }
     return removed;
 }
 
 pcb_PTR outChild (pcb_PTR p)
+/*
+Make the pcb pointed to by p no longer the child of its parent. 
+Note that the element pointed to by p need not be the first child of its parent. 
+PARAMETERS: pointer to child pcb p
+RETURN VALUES: NULL if the pcb pointed to by p has no parent; otherwise return p
+*/
 {
     if (p->p_prnt == NULL)
+    /*pcb pointed to by p has no parent, return NULL*/
         return NULL;
+
     if (p->p_prnt->p_child == p)
+    /*p is its parent's first child, call removeChild on p's parent*/
         return removeChild(p->p_prnt);
 
+    /*update pointers of p's siblings*/
     p->p_sib_left->p_sib = p->p_sib;
-    
     if (p->p_sib != NULL)
         p->p_sib->p_sib_left = p->p_sib_left;
 
+    /*reset p's pointers*/
     p->p_sib = NULL;
     p->p_sib_left = NULL;
     p->p_prnt = NULL;
