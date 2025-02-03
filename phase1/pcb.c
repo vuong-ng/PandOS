@@ -62,8 +62,7 @@ void initPcbs ()
 
 pcb_PTR mkEmptyProcQ ()
 {
-    struct pcb_t empty_proc_q;
-    pcb_PTR tp = &empty_proc_q;
+    pcb_PTR tp = NULL;
     return tp;
 }
 
@@ -80,6 +79,7 @@ void insertProcQ (pcb_PTR *tp, pcb_PTR p)
         *tp = p;
         p->p_next = p;
         p->p_prev = p;
+        
         return;
     }
     
@@ -88,30 +88,27 @@ void insertProcQ (pcb_PTR *tp, pcb_PTR p)
     p->p_prev = *tp;
     (*tp) = p;
     (*tp)->p_next = hp;
-    hp->p_prev = (*tp);
-
+    if(hp != NULL)
+        hp->p_prev = (*tp);
     return;
 }
 
 pcb_PTR removeProcQ (pcb_PTR *tp)
 {
     /* empty*/ 
-    if (emptyProcQ(*tp))
-        return NULL;
-
+    if (emptyProcQ(*tp)) return NULL;
+    
     /*one pcb, head==tail*/
     pcb_PTR removed;
     if (headProcQ(*tp) == (*tp)) 
-    {
+    {   
         removed = (*tp);
         (*tp) = NULL;
         return removed;
     }
-        
     removed = (*tp)->p_next;
     (*tp)->p_next = (*tp)->p_next->p_next;
     (*tp)->p_next->p_prev = (*tp);
-
     removed->p_next = NULL;
     removed->p_prev = NULL;
     return removed;

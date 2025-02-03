@@ -124,6 +124,14 @@ void adderrbuf(char *strp) {
 
 
 void main() {
+	/*delete before submit*/
+	int n;
+	for (n=0; n < MAXSEM; n++){
+		sem[n] = n+1;
+	};
+	onesem = 100;
+	/*88888888888888888888888*/
+	
 	int i;
 
 	initPcbs();
