@@ -1,8 +1,7 @@
 #include "../h/asl.h"
 #include "../h/pcb.h" 
-#include "/usr/include/umps3/umps/libumps.h"
 
-int zero = 0;
+int ZERO = 0;
 int MAXINT = 2147483647;
 
 /*define a ASL and a list of free semaphore*/  
@@ -51,11 +50,8 @@ void initASL()
     semd_h->s_next = semd_tail;
     semd_tail->s_next = NULL;
 
-    semd_h->s_semAdd = &zero;
+    semd_h->s_semAdd = &ZERO;
     semd_tail->s_semAdd = &MAXINT;
-
-
-    /*uy tin, count = 20*/
 
 };
 
@@ -121,9 +117,7 @@ pcb_PTR removeBlocked (int *semdAdd){
     currSemd = traverseToAddress(semdAdd);
     /*if semdAdd not found, return NULL*/
     if (currSemd == NULL)
-    {
         return NULL;
-    }
     
     /*headProcQ(currSemd->s_procQ);*/
     pcb_PTR firstProc = removeProcQ(&(currSemd->s_procQ));
