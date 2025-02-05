@@ -1,9 +1,17 @@
+/*
+asl.c: Manages an Active Semaphore List (ASL).
 
+- Maintains an ASL for semaphores and a free list for semaphore allocation.
+- Provides functions for inserting, removing, and accessing processes.
+- Each semaphore descriptor contains a process queue for processes.
+- Manages semaphore creation and cleanup
+*/ 
 
 #include "../h/asl.h"
 #include "../h/pcb.h" 
 
-HIDDEN int ZERO = 0;
+/*define integer semaphores for sentinel nodes*/
+HIDDEN int ZERO = 0; 
 HIDDEN int MAXINT = 2147483647;
 
 /*define a ASL and a list of free semaphore*/  
