@@ -56,8 +56,9 @@ void initASL()
         }
     }
 
-    semdFree_h = &semdTable[0];
+    semdFree_h = &semdTable[0];    /*point head point of free list to the semaphore linked list*/
 
+    /*create dummy head and tail node*/
     semd_t* freeSemdHead = semdFree_h;
     semdFree_h = semdFree_h->s_next;
 
@@ -67,9 +68,11 @@ void initASL()
     semd_h = freeSemdHead;
     semd_tail = freeSemdTail;
 
+    /*connect head and tail dummy node*/
     semd_h->s_next = semd_tail;
     semd_tail->s_next = NULL;
 
+    /*assign address for head and tail dummy node*/
     semd_h->s_semAdd = &ZERO;
     semd_tail->s_semAdd = &MAXINT;
 
