@@ -1,5 +1,11 @@
 /*
-Long Pham
+pcb.c: Implements a queue manager and tree representation for Process Control Blocks (PCBs)
+using linked lists. 
+
+- Maintains a free list (`pcbFree`) for efficient PCB allocation and deallocation.
+- Implements process queues as circular doubly linked lists.
+- Represents parent-child relationships using a singly linked list.
+- Provides functions for queue operations (insert, remove, search) and tree management.
 */
 
 #include "../h/pcb.h"
@@ -261,7 +267,6 @@ is pointed to by tp; NULL if the process queue is empty
     return tp->p_next; /*return head*/
 }
 
-
 int emptyChild (pcb_PTR p)
 /* 
 Check whether pcb pointed by p has any child 
@@ -274,7 +279,6 @@ RETURN VALUES: TRUE if the pcb pointed to by p has no children. FALSE otherwise.
         return TRUE;
     return FALSE;
 }
-
 
 void insertChild (pcb_PTR prnt, pcb_PTR p)
 /*
@@ -296,7 +300,6 @@ RETURN VALUES: void
     prnt->p_child = p;
     return;
 }
-
 
 pcb_PTR removeChild (pcb_PTR p)
 /* 
