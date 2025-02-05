@@ -124,6 +124,7 @@ void adderrbuf(char *strp) {
 
 
 void main() {
+	
 	int n;
 	for (n=0; n < MAXSEM; n++){
 		sem[n] = n;
