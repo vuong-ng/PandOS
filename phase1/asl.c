@@ -120,8 +120,8 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
     semd_t* currSemd = NULL;
     traverseToAddress(semAdd, &prevSemd, &currSemd);    /*find semaphore with semAdd physical address*/
     prevSemd = NULL;  /*set unused pointer to NULL*/
-    if (currSemd != NULL) {          /*found semaphore with semAdd*/
 
+    if (currSemd != NULL) {          /*found semaphore with semAdd*/
         /*set p's semaphore address to semAdd and add p to procQ of that semaphore*/
         p->p_semAdd = semAdd;
         insertProcQ(&(currSemd->s_procQ), p); 
@@ -176,7 +176,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
  *           returns NULL if there no semaphore with such address in the ASL
  */
 pcb_PTR removeBlocked (int *semdAdd){
-    semd_t* currSemd=NULL;
+    semd_t* currSemd = NULL;
     semd_t* prev = NULL;
     traverseToAddress(semdAdd, &prev, &currSemd);   /*find semaphore with semAdd physical address*/
 
@@ -217,10 +217,10 @@ pcb_PTR removeBlocked (int *semdAdd){
  *           returns NULL if there no semaphore with such address in the ASL
  */
 pcb_PTR headBlocked (int *semAdd){
-    semd_t *currSemd=NULL;
-    semd_t* prev=NULL;
+    semd_t *currSemd = NULL;
+    semd_t* prev = NULL;
     traverseToAddress(semAdd, &prev, &currSemd); /*find semaphore with semAdd physical address*/
-    prev=NULL;  /*set unused pointer to NULL*/
+    prev = NULL;  /*set unused pointer to NULL*/
 
     /*if semAdd not in ASL*/
     if (currSemd == NULL)

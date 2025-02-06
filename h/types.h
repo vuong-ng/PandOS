@@ -105,7 +105,6 @@ struct pcb_t *p_next, /* pointer to next entry */
              *p_prev, /* pointer to prev entry */
 
 /* process tree fields */
-
              *p_prnt, /* pointer to parent */
              *p_child, /* pointer to 1st child */
              *p_sib, /* pointer to sibling */
