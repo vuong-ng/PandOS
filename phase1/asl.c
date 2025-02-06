@@ -11,8 +11,8 @@ asl.c: Manages an Active Semaphore List (ASL).
 #include "../h/pcb.h" 
 
 /*define integer semaphores for sentinel nodes*/
-HIDDEN int ZERO = 0; 
-HIDDEN int MAXINT = 2147483647;
+#define ZERO 0
+#define MAXINT 2147483647
 
 /*define a ASL and a list of free semaphore*/  
 HIDDEN semd_t *semd_h;          /*pointer to dummy node - head of ASL*/
@@ -38,7 +38,7 @@ HIDDEN void traverseToAddress(int* semdAdd, semd_t **prev, semd_t **curr){
     *prev = semd_h;
 
     while(*curr != NULL){
-        if (*((*curr)->s_semAdd) == *(semdAdd)){
+        if ((*curr)->s_semAdd == (semdAdd)){
             /*if semAdd in ASL*/
             return;
         }
@@ -97,8 +97,8 @@ void initASL()
     semd_tail->s_next = NULL;
 
     /*assign address for head and tail dummy node*/
-    semd_h->s_semAdd = &ZERO;
-    semd_tail->s_semAdd = &MAXINT;
+    semd_h->s_semAdd = ZERO;
+    semd_tail->s_semAdd = MAXINT;
 
 };
 
@@ -149,7 +149,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
         semd_t *next = semd_h->s_next;
         semd_t *prev = semd_h;
         while (next != NULL){
-            if (*(prev->s_semAdd) < *(semAdd) && *(next->s_semAdd) > *(semAdd)){
+            if ((prev->s_semAdd) < (semAdd) && (next->s_semAdd) > (semAdd)){
                 /*if semdAdd in is between 2 node by numerical value*/
                 prev->s_next = freeSemd;
                 freeSemd->s_next = next;

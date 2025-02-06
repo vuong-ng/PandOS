@@ -1,4 +1,4 @@
-/*********************************P1TEST.C******************************* 
+/*********************************P1TEST.C*******************************
  *
  *	Test program for the modules ASL and pcbQueues (phase 1).
  *
@@ -12,12 +12,12 @@
  *      Modified by Michael Goldweber on May 2020
  */
 
-#include "../h/const.h" 
+#include "../h/const.h"
 #include "../h/types.h"
 
 #include "/usr/include/umps3/umps/libumps.h"
 #include "../h/pcb.h"
-#include "../h/asl.h" 
+#include "../h/asl.h"
 
 
 #define MAXPROC	20
@@ -124,14 +124,6 @@ void adderrbuf(char *strp) {
 
 
 void main() {
-	/*delete before submit*/
-	int n;
-	for (n=0; n < MAXSEM; n++){
-		sem[n] = n+1;
-	};
-	onesem = 100;
-	/*88888888888888888888888*/
-	
 	int i;
 
 	initPcbs();
@@ -255,7 +247,7 @@ void main() {
 	for (i = 0; i < 10; i++) 
 		freePcb(procp[i]);
 
-	
+
 	/* check ASL */
 	initASL();
 	addokbuf("Initialized active semaphore list   \n");
