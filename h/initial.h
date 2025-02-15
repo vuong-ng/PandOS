@@ -3,6 +3,8 @@
 
 #include "../h/const.h"
 #include "../h/types.h"
+#include "../h/pcb.h"
+#include "../h/asl.h"
 
 extern void test();
 
@@ -14,6 +16,9 @@ pcb_PTR curr_proc; /*pointer to the pcb that is in the “running” state, i.e.
 int* device_sem1;
 int* device_sem2; 
 int* clock_sem;
+
+
+passupvector_t* xxx;
 
 
 

@@ -1,8 +1,14 @@
 #include "../h/initial.h"
-#include "../h/pcb.h"
-#include "../h/asl.h"
+#include "../h/exceptions.h"
 int main()
 {
+    /*Initialize Pass Up Vector*/
+    xxx->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
+    xxx->tlb_refll_stackPtr = 0x20001000;
+    xxx->execption_handler =(memaddr) fooBar;
+    xxx->exception_stackPtr = 0x20001000;
+
+
     /*Initialize Level 2 variables*/
     initPcbs();
     initASL();
@@ -28,7 +34,7 @@ int main()
 
     /*initializing the processor state */
     /*interrupt (0) enabled, Local Timer (27) enabled, kernel mode on (1)*/
-    curr_proc->p_s.s_status = 0b00001000000000000000000000000100 ; 
+    curr_proc->p_s.s_status = 0b00001000000000000000000000000100; 
     curr_proc->p_s.s_sp = RAMBASEADDR + RAMBASESIZE;  /*set stack pointer to RAMTOP*/
     curr_proc->p_s.s_pc = (memaddr) test;   /*set pc to test*/
     curr_proc->p_s.s_t9 = (memaddr) test; 

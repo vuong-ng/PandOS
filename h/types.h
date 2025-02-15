@@ -6,7 +6,7 @@
  * This header file contains utility types definitions.
  * 
  ****************************************************************************/
-
+#include "/usr/include/umps3/umps/libumps.h"
 #include "../h/const.h"
 
 typedef signed int cpu_t;
