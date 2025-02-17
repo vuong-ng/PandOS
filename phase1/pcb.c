@@ -2,6 +2,8 @@
 pcb.c: Implements a queue manager and tree representation for Process Control Blocks (PCBs)
 using linked lists. 
 
+Written by Long Pham & Vuong Nguyen
+
 - Maintains a free list (`pcbFree`) for efficient PCB allocation and deallocation.
 - Implements process queues as circular doubly linked lists.
 - Represents parent-child relationships using a singly linked list.
@@ -20,19 +22,9 @@ PARAMETERS: pointer to pcb p
 RETURN VALUES: void
 */
 {
-    
-    if (pcbFree_h == NULL){
-    /*pcbFree list empty, point its head to p*/
-        pcbFree_h = p;
-        pcbFree_h->p_next = NULL;
-    }
-
-    else{
-    /*pcbFree list not empty, point its head to p, update p->p_next to the previous head*/
-        pcb_PTR head = pcbFree_h;
-        pcbFree_h = p;
-        pcbFree_h->p_next = head;
-    }
+    /*update p->p_next to head, set head to p*/
+    p->p_next = pcbFree_h;
+    pcbFree_h = p;
     return;
 }
 
@@ -95,8 +87,7 @@ RETURN VALUES: void
     pcbFree_h->p_next = NULL;
     int i = MAXPROC - 1;
     while (i > 0){
-        pcbFree_h = &static_array[i-1];
-        pcbFree_h->p_next = &static_array[i];
+        freePcb(&static_array[i-1]);
         i -= 1;
     }
     return;
@@ -110,8 +101,7 @@ PARAMETERS: None
 RETURN VALUES: a pointer to the tail of an empty process queue (NULL) 
 */
 {
-    pcb_PTR tp = NULL;
-    return tp;
+    return NULL;
 }
 
 int emptyProcQ (pcb_PTR tp)
@@ -121,10 +111,8 @@ PARAMETERS: tail pointer of the queue in check (tp)
 RETURN VALUES: TRUE if queue is empty, FALSE otherwise
 */
 {
-    if (tp == NULL)
     /*tail pointer is NULL, queue empty*/
-        return TRUE;
-    return FALSE;
+    return (tp == NULL);
 }
 
 void insertProcQ (pcb_PTR *tp, pcb_PTR p)
@@ -174,9 +162,9 @@ otherwise return the pointer to the removed element.
     pcb_PTR removed;
     if (emptyProcQ(*tp))
     /*process queue empty, return NULL*/
-        removed = NULL;
+        return NULL;
     
-    else if (headProcQ(*tp) == (*tp)){
+    if (headProcQ(*tp) == (*tp)){
     /*edge case: process queue has one element,
     return the tail and null it out*/
         removed = (*tp);
@@ -187,12 +175,11 @@ otherwise return the pointer to the removed element.
         removed = (*tp)->p_next;
         (*tp)->p_next = removed->p_next;
         removed->p_next->p_prev = (*tp);
-
-        /*reset removed pcb's pointers*/
-        removed->p_next = NULL;
-        removed->p_prev = NULL;
     }
     
+    /*reset removed pcb's pointers*/
+    removed->p_next = NULL;
+    removed->p_prev = NULL;
     return removed;
 }
 
@@ -214,25 +201,13 @@ condition); otherwise, return p
     if (headProcQ(*tp) == (*tp))
     /*edge case: process queue has one element */
     {
-        if (p == (*tp))
-        /*check if the one element is p. If yes, null out the tail
-        and return p, otherwise return NULL*/
-        {
-            (*tp) = NULL;
-            return p;
-        }
-        else 
-            return NULL;
+        return removeProcQ(tp);
     }
 
     /*check if p is in process queue*/
     pcb_PTR search = (*tp)->p_next;
-    while(search != *tp) 
-    {
-        if (search == p)
-            break;
+    while(search != *tp && search != p) 
         search = search->p_next;
-    }
 
     if (search == *tp && search != p)
     /*done searching but couldn't find p, return NULL*/
@@ -274,10 +249,8 @@ PARAMETERS: pointer to pcb p
 RETURN VALUES: TRUE if the pcb pointed to by p has no children. FALSE otherwise. 
 */
 {
-    if (p->p_child == NULL)
     /*p_child NULL, p has no children*/ 
-        return TRUE;
-    return FALSE;
+    return p->p_child == NULL;
 }
 
 void insertChild (pcb_PTR prnt, pcb_PTR p)
@@ -310,7 +283,7 @@ return a pointer to this removed first child pcb.
 */
 {
     pcb_PTR removed;
-    if(p->p_child == NULL)
+    if(emptyChild(p))
     /*p has no children, return NULL*/
         removed = NULL;
     else{

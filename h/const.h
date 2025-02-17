@@ -7,6 +7,10 @@
  * 
  ****************************************************************************/
 
+/*semaphores for sentinel nodes*/
+#define ZERO 0
+#define MAXINT 2147483647
+
 #define MAXPROC 20
 
 /* Hardware & software constants */

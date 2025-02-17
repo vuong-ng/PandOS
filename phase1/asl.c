@@ -1,6 +1,8 @@
 /*
 asl.c: Manages an Active Semaphore List (ASL).
 
+Written by Long Pham & Vuong Nguyen
+
 - Maintains an ASL for semaphores and a free list for semaphore allocation.
 - Provides functions for inserting, removing, and accessing processes.
 - Each semaphore descriptor contains a process queue for processes.
@@ -10,14 +12,9 @@ asl.c: Manages an Active Semaphore List (ASL).
 #include "../h/asl.h"
 #include "../h/pcb.h" 
 
-/*define integer semaphores for sentinel nodes*/
-#define ZERO 0
-#define MAXINT 2147483647
-
 /*define a ASL and a list of free semaphore*/  
-HIDDEN semd_t *semd_h;          /*pointer to dummy node - head of ASL*/
-HIDDEN semd_t *semd_tail;       /*pointer to dummy node - tail of ASL*/
-HIDDEN semd_t *semdFree_h;      /*pointer to list of free semaphore*/
+HIDDEN semd_t* semd_h;          /*pointer to dummy node - head of ASL*/
+HIDDEN semd_t* semdFree_h;      /*pointer to list of free semaphore*/
 
 /*
  * Function:  traverseToAddress  
@@ -32,24 +29,14 @@ HIDDEN semd_t *semdFree_h;      /*pointer to list of free semaphore*/
  *             prev points to semaphore prior to the found semaphore
  */
 HIDDEN void traverseToAddress(int* semdAdd, semd_t **prev, semd_t **curr){
-
     /*two pointers to keep track of the semaphores and reconnect after remove*/
-    *curr = semd_h->s_next;      
+    *curr = semd_h->s_next;
     *prev = semd_h;
 
-    while(*curr != NULL){
-        if ((*curr)->s_semAdd == (semdAdd)){
-            /*if semAdd in ASL*/
-            return;
-        }
+    while((*curr)->s_semAdd < MAXINT && (*curr)->s_semAdd != (semdAdd)){
         (*prev) = (*curr);
         (*curr) = (*curr)->s_next;
     }
-
-    /*set both to NULL if not found semAdd*/
-    (*curr) = NULL;
-    (*prev) = NULL;
-
     return;
 }
 
@@ -81,25 +68,21 @@ void initASL()
 
     semdFree_h = &semdTable[0];    /*point head point of free list to the semaphore linked list*/
 
-    /*create dummy head  node*/
-    semd_t* freeSemdHead = semdFree_h;
+    /*create dummy head node*/
+    semd_h = semdFree_h;
     semdFree_h = semdFree_h->s_next;
 
     /*create dummy tail node*/
-    semd_t *freeSemdTail = semdFree_h;
+    semd_t* dummy_tail = semdFree_h;
     semdFree_h = semdFree_h->s_next;
-
-    semd_h = freeSemdHead;
-    semd_tail = freeSemdTail;
-
+    
     /*connect head and tail dummy node*/
-    semd_h->s_next = semd_tail;
-    semd_tail->s_next = NULL;
+    semd_h->s_next = dummy_tail;
+    dummy_tail->s_next = NULL;
 
     /*assign address for head and tail dummy node*/
     semd_h->s_semAdd = ZERO;
-    semd_tail->s_semAdd = MAXINT;
-
+    dummy_tail->s_semAdd = MAXINT;
 };
 
 /*
@@ -114,52 +97,38 @@ void initASL()
  *           FALSE if we can add process into the ASL
  */
 int insertBlocked(int *semAdd, pcb_PTR p) {
-
     /*find semaphore with semAdd in the ASL*/
     semd_t* prevSemd = NULL;
     semd_t* currSemd = NULL;
     traverseToAddress(semAdd, &prevSemd, &currSemd);    /*find semaphore with semAdd physical address*/
-    prevSemd = NULL;  /*set unused pointer to NULL*/
-
-    if (currSemd != NULL) {          /*found semaphore with semAdd*/
-        /*set p's semaphore address to semAdd and add p to procQ of that semaphore*/
-        p->p_semAdd = semAdd;
+    
+    if (currSemd->s_semAdd != MAXINT) {          /*found semaphore with semAdd*/
+        /*add p to procQ of that semaphore*/
         insertProcQ(&(currSemd->s_procQ), p); 
-        return FALSE;
     }
 
-    /*if the semaphore is not in the ASL and the free list is empty, return TRUE*/
-    if (currSemd == NULL && semdFree_h == NULL){
-        return TRUE;
-    }
+    /*if the semaphore is not in the ASL*/
+    else{
+        /*if the free list is empty, return TRUE*/
+        if (semdFree_h == NULL){
+            return TRUE;
+        }
 
-    /*if the semaphore is not in ASL but the free list is not empty, allocate a new semaphore*/
-    if (currSemd == NULL && semdFree_h != NULL){
-
-        /*take out 1 free semaphore form free list*/
+        /*if the free list is not empty, allocate a new semaphore*/
+        else {
+        /*take out 1 free semaphore from free list*/
         semd_t *freeSemd = semdFree_h;
-        semdFree_h = semdFree_h->s_next;    /*point head of free list to next semaphore in the list*/
+        semdFree_h = semdFree_h->s_next;
 
         freeSemd->s_semAdd = semAdd;
         freeSemd->s_procQ = mkEmptyProcQ(); /*initialize a process queue for the semaphore*/
-        p->p_semAdd = semAdd;
         insertProcQ(&(freeSemd->s_procQ), p);
 
-        /*find the right place for the next semaphore*/
-        semd_t *next = semd_h->s_next;
-        semd_t *prev = semd_h;
-        while (next != NULL){
-            if ((prev->s_semAdd) < (semAdd) && (next->s_semAdd) > (semAdd)){
-                /*if semdAdd in is between 2 node by numerical value*/
-                prev->s_next = freeSemd;
-                freeSemd->s_next = next;
-                return FALSE;
-            }
-            prev = next;
-            next = next->s_next; 
+        freeSemd->s_next = currSemd;  /*set freeSemd next pointer to dummy tail node*/
+        prevSemd->s_next = freeSemd;
         }
-        return FALSE;
     }
+    p->p_semAdd = semAdd; /*set p's semaphore address to semAdd */
     return FALSE;
 };
 
@@ -175,27 +144,26 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
  *  returns: If semaphore is found,remove and returns the pointer points to the first pcb in the semaphore found
  *           returns NULL if there no semaphore with such address in the ASL
  */
-pcb_PTR removeBlocked (int *semdAdd){
+pcb_PTR removeBlocked (int *semAdd){
+    semd_t* prevSemd = NULL;
     semd_t* currSemd = NULL;
-    semd_t* prev = NULL;
-    traverseToAddress(semdAdd, &prev, &currSemd);   /*find semaphore with semAdd physical address*/
+    traverseToAddress(semAdd, &prevSemd, &currSemd);   /*find semaphore with semAdd physical address*/
 
     /*if semdAdd not found, return NULL*/
-    if (currSemd == NULL)
+    if (currSemd->s_semAdd == MAXINT)
         return NULL;
     
     /*remove first pcb*/
     pcb_PTR firstProc = removeProcQ(&(currSemd->s_procQ));
-
-    if(firstProc != NULL)   /*if process queue not empty, set removed process's semAdd to NULL*/
+    /*if process queue not empty, set removed process's semAdd to NULL*/
+    if(firstProc != NULL)   
         firstProc->p_semAdd = NULL;
 
-    /*if the process queue of semaphore get empty*/
-    if (emptyProcQ(currSemd->s_procQ) == 1)
+    /*if the process queue of semaphore is empty*/
+    else
     {   
         /*remove sem from ASL if procQ empty*/
-        prev->s_next = currSemd->s_next; 
-        currSemd->s_next = NULL;
+        prevSemd->s_next = currSemd->s_next;
 
         /*put sem back into free list*/
         currSemd->s_next = semdFree_h;          
@@ -217,16 +185,14 @@ pcb_PTR removeBlocked (int *semdAdd){
  *           returns NULL if there no semaphore with such address in the ASL
  */
 pcb_PTR headBlocked (int *semAdd){
-    semd_t *currSemd = NULL;
-    semd_t* prev = NULL;
-    traverseToAddress(semAdd, &prev, &currSemd); /*find semaphore with semAdd physical address*/
-    prev = NULL;  /*set unused pointer to NULL*/
+    semd_t* prevSemd = NULL;
+    semd_t* currSemd = NULL;
+    traverseToAddress(semAdd, &prevSemd, &currSemd); /*find semaphore with semAdd physical address*/
 
     /*if semAdd not in ASL*/
-    if (currSemd == NULL)
+    if (currSemd->s_semAdd == MAXINT)
         return NULL;
-    pcb_PTR headProc = headProcQ(currSemd->s_procQ);
-    return headProc;
+    return headProcQ(currSemd->s_procQ);
 }
 
 /*
@@ -242,18 +208,31 @@ pcb_PTR headBlocked (int *semAdd){
  *           returns NULL if there no semaphore with such address in the ASL
  */
 pcb_PTR outBlocked(pcb_PTR p){
-    int* semAdd = p->p_semAdd;
-    semd_t* currSem = NULL;
-    semd_t* prev = NULL;
+    semd_t* prevSemd = NULL;
+    semd_t* currSemd = NULL;
+    traverseToAddress(p->p_semAdd, &prevSemd, &currSemd); /*find semaphore with semAdd physical address*/
 
-    traverseToAddress(semAdd, &prev, &currSem); /*find semaphore with semAdd physical address*/
-    prev = NULL;  /*set unused pointer to NULL*/
-
-    /*return NULL if semAdd not*/
-    if (currSem == NULL)
+    /*return NULL if semAdd not found*/
+    if (currSemd->s_semAdd == MAXINT)
         return NULL;
 
     /*return pointer to the process p pointed to by p in the semaphore*/
-    pcb_PTR removedProc = outProcQ(&(currSem->s_procQ), p);     /*if p is not found in the process queue, outProcQ returns NULL*/
-    return removedProc;
+    pcb_PTR removedProc = outProcQ(&(currSemd->s_procQ), p);
+
+    if(removedProc == NULL)
+    /*p not found in queue, error condition*/
+        return NULL;
+    else{
+        removedProc->p_semAdd = NULL;    /*set semAdd in removedProc to NULL*/
+
+        if(emptyProcQ(currSemd->s_procQ)){
+        /*remove sem from ASL if procQ empty*/
+        prevSemd->s_next = currSemd->s_next;
+
+        /*put sem back into free list*/
+        currSemd->s_next = semdFree_h;          
+        semdFree_h = currSemd;
+        }
+    }
+    return removedProc ;  /*if p is not found in the process queue, outProcQ returns NULL*/
 }
