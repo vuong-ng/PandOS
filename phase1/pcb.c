@@ -64,6 +64,7 @@ to the removed element
 
     p->p_time = 0;
     p->p_semAdd = 0;
+    p->p_supportStruct = NULL;
 
     return p;
 }

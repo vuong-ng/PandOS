@@ -99,6 +99,10 @@ typedef struct state_t {
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
 
+typedef struct support_t{
+
+} support_t;
+
 typedef struct pcb_t {
 /* process queue fields */
 struct pcb_t *p_next, /* pointer to next entry */
@@ -116,7 +120,7 @@ cpu_t        p_time; /* cpu time used by proc */
 int          *p_semAdd; /* pointer to sema4 on which process blocked */
 
 /* support layer information */
-/*support_t *p_supportStruct;*/
+support_t *p_supportStruct;
 
 /* ptr to support struct */
 
