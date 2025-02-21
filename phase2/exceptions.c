@@ -25,7 +25,8 @@ void fooBar()
     /*interrupt*/
     case 0:
     {
-        interrupt_handler(cause);
+        /*while there is an unhandled interrupt, call interrupt handler*/
+        while(interruptHandler(&cause) == 1); 
         break;
     }
 
@@ -72,6 +73,7 @@ void syscall_handler(pcb_PTR curr_proc)
     status &= 0b00000000000000000000000000000001; /*check mode, macro: */
     if (status == 1) /*in user-mode, trap into kernel*/
     {
+        (processor_0_exception_state->s_cause) &= 0b11111111111111111111111110000011;
         (processor_0_exception_state->s_cause) |= 0b00000000000000000000000000101000; /*set Cause.ExcCode to 10 - RI*/
         trap_handler();
     }
@@ -79,6 +81,7 @@ void syscall_handler(pcb_PTR curr_proc)
 
     switch (a0)
     {
+    /*Create Process (SYS1)*/
     case 1:
     {
         /*initialize state of new process baseed on current process's state ( = processor state??) saved in a1 */
@@ -122,9 +125,11 @@ void syscall_handler(pcb_PTR curr_proc)
         new_proc->p_semAdd = NULL;
         
          /*ret control to curr proc (do nothing here)*/
-    }
         break;
-    
+    }
+        
+
+    /*Terminate Process (SYS2)*/
     case 2:
     {
         /*step 1: remove the process and all its descendants*/
@@ -139,9 +144,11 @@ void syscall_handler(pcb_PTR curr_proc)
         softblock_cnt--;
 
         /*(??) curr_proc terminated, call scheduler to schedule new pcb*/
-    }
-        break;
 
+        break;
+    }
+        
+    /*Passeren (P) (SYS3)*/
     case 3:
     /*P: decrease value of semaphore, if < 0, block the process (sleep)*/
     {
@@ -170,9 +177,10 @@ void syscall_handler(pcb_PTR curr_proc)
             int insert_successful = insertBlocked(semAdd, curr_proc);
             scheduler();
         }
-    }
         break;
-    
+    }
+        
+    /*Verhogen (V) (SYS4)*/
     case 4:
     /*V: increase value of semaphore, if there's sleeping process, wake it up*/
     {
@@ -181,9 +189,10 @@ void syscall_handler(pcb_PTR curr_proc)
         pcb_PTR removed = removeBlocked(semAdd);
 
         return;
-    }
         break;
-
+    }
+        
+    /*Wait for IO Device (SYS5)*/
     case 5:
     /*
     Given an interrupt line (IntLineNo) and a device number (DevNo) one can
@@ -220,18 +229,22 @@ void syscall_handler(pcb_PTR curr_proc)
          /*block the Current Process on the ASL, call scheduler*/
         int insert_successful = insertBlocked(device_semAdd, curr_proc);
         scheduler();
-    }
-        break;
 
+        break;
+    }
+        
+    /*Get CPU Time (SYS6)*/
     case 6:
     {
         /*step 1: put current proc's p_time in v0*/
         curr_proc->p_s.s_v0 = curr_proc->p_time;
 
         return curr_proc->p_time /* + cputime during current quantum*/;
-    }
-        break;
 
+        break;
+    }
+        
+    /*Wait For Clock (SYS7)*/
     case 7:
     {
         /*copy processor state into curr proc state*/
@@ -258,17 +271,20 @@ void syscall_handler(pcb_PTR curr_proc)
         scheduler();
         /*step 2: performs V (increase) every 100 millisecond on pseudo-clock sem*/
 
-    }
         break;
-
+    }
+        
+    /*Get SUPPORT Data (SYS8)*/
     case 8:
     {
         
 
         /*step 1: return p_supportStruct if exists, otherwise NULL*/
         return curr_proc->p_supportStruct;
-    }
+
         break;
+    }
+        
     default:
         break;
     }
