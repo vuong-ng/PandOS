@@ -26,7 +26,10 @@ void fooBar()
     case 0:
     {
         /*while there is an unhandled interrupt, call interrupt handler*/
-        while(interruptHandler(&cause) == 1); 
+        /*if there's unresolved interrupt, fooBar will be called again*/
+        interruptHandler(&cause); 
+
+        /*return back to curr_proc*/
         break;
     }
 
@@ -91,7 +94,10 @@ void syscall_handler(pcb_PTR curr_proc)
 
         /* new_proc == NULL -> insufficient resources, put err code -1 in v0*/
         if (new_proc == NULL)
+        {
             new_proc->p_s.s_v0 = -1;
+            return;
+        }
         else 
             new_proc->p_s.s_v0 = 0;
 
@@ -136,15 +142,15 @@ void syscall_handler(pcb_PTR curr_proc)
         terminateProc(curr_proc->p_child);
         pcb_PTR terminated_proc = outChild(curr_proc);
 
-        /*step 2: if terminated_proc blocked on sem, adjust sem
-                  else dont adjust sem*/
+        /*step 2: if terminated_proc blocked on sem, increment its sem
+                  however if blocked on DEVICE sem, dont adjust sem*/
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
         softblock_cnt--;
 
         /*(??) curr_proc terminated, call scheduler to schedule new pcb*/
-
+        scheduler();
         break;
     }
         
@@ -226,7 +232,7 @@ void syscall_handler(pcb_PTR curr_proc)
 
         /*perform P on device semaphore*/
         *device_semAdd -= 1;
-         /*block the Current Process on the ASL, call scheduler*/
+         /*(always) block the Current Process on the ASL, call scheduler*/
         int insert_successful = insertBlocked(device_semAdd, curr_proc);
         scheduler();
 
@@ -239,7 +245,7 @@ void syscall_handler(pcb_PTR curr_proc)
         /*step 1: put current proc's p_time in v0*/
         curr_proc->p_s.s_v0 = curr_proc->p_time;
 
-        return curr_proc->p_time /* + cputime during current quantum*/;
+        return curr_proc->p_time /* + cputime during current quantum (using TOD Clock)*/;
 
         break;
     }
@@ -259,7 +265,7 @@ void syscall_handler(pcb_PTR curr_proc)
         /*Update the accumulated CPU time for the Current Process*/
 
 
-        /*step 1: performs P (unblock) on pseudo-clock sem*/
+        /*step 1: performs P on pseudo-clock sem*/
 
         int* pseudo_clk_semAdd = device_sem[48];
         *(pseudo_clk_semAdd) -= 1;
@@ -277,8 +283,6 @@ void syscall_handler(pcb_PTR curr_proc)
     /*Get SUPPORT Data (SYS8)*/
     case 8:
     {
-        
-
         /*step 1: return p_supportStruct if exists, otherwise NULL*/
         return curr_proc->p_supportStruct;
 

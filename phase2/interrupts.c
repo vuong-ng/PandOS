@@ -1,6 +1,6 @@
 #include "../h/interrupts.h"
 
-int interruptHandler(unsigned int* cause)
+void interruptHandler(unsigned int* cause)
 {
     /*step 1: determine highest priority pending interrupt*/
     int IP = (*cause);
@@ -32,7 +32,6 @@ int interruptHandler(unsigned int* cause)
         else
         {
             nonTimerInterruptHandler(3, dev_no);
-            resetDeviceBit(interrupt_line_address, dev_no);  /*reset device bit*/
         } 
 
     }
@@ -46,7 +45,6 @@ int interruptHandler(unsigned int* cause)
         else
         {
             nonTimerInterruptHandler(4, dev_no); 
-            resetDeviceBit(interrupt_line_address, dev_no);  /*reset device bit*/
         } 
     }
     /*Interrupt Line 5*/
@@ -59,7 +57,6 @@ int interruptHandler(unsigned int* cause)
         else
         {
             nonTimerInterruptHandler(5, dev_no);
-            resetDeviceBit(interrupt_line_address, dev_no);  /*reset device bit*/
         }  
     }
     /*Interrupt Line 6*/
@@ -72,7 +69,6 @@ int interruptHandler(unsigned int* cause)
         else
         {
             nonTimerInterruptHandler(6, dev_no); 
-            resetDeviceBit(interrupt_line_address, dev_no);  /*reset device bit*/
         }
     }
     /*Interrupt Line 7*/
@@ -86,15 +82,14 @@ int interruptHandler(unsigned int* cause)
         else 
         {
             nonTimerInterruptHandler(7, dev_no);
-            resetDeviceBit(interrupt_line_address, dev_no);  /*reset device bit*/
         } 
     }
     /*No Pending Interrupt*/
     else 
     {
-        return 0;
+        return;
     }
-    return 1; /*there's still pending interrupt(s)*/
+    return; /*there's still pending interrupt(s)*/
 }
 
 
@@ -111,10 +106,6 @@ int getPendingDevice(int* interrupt_line_address)
     else                                                      return -1; /*no device pending left for this interrupt line*/
 }
 
-void resetDeviceBit(int* interrupt_line_address, int dev_no)
-{
-    (*interrupt_line_address) &= (RESETHANDLEDDEVICE) >> dev_no;
-}
 
 void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 {
@@ -161,13 +152,31 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 
 void PLTInterrupt()
 {
-    /*acknowledge PLT interrupt by loading timer with new value*/
+    /*acknowledge PLT interrupt by loading timer with new value??*/
+    setTIMER(0);
 
     /*copy processor state (BIOS Data Page) into pcb's p_s */
+    state_t* processor_0_exception_state = BIOSDATAPAGE;
+    curr_proc->p_s.s_entryHI = processor_0_exception_state->s_entryHI;
+    curr_proc->p_s.s_cause = processor_0_exception_state->s_cause;
+    curr_proc->p_s.s_status = processor_0_exception_state->s_status;
+    curr_proc->p_s.s_pc = processor_0_exception_state->s_pc;
+    int i;
+    for (i = 0; i < STATEREGNUM; i++)
+        curr_proc->p_s.s_reg[i] = processor_0_exception_state->s_reg[i];
 
     /*update accumulated CPU time for curr_proc*/
 
-    /*insertProcQ(&ready_queue, curr_proc);*/
+    unsigned int quantum_end_time;
+    STCK(quantum_end_time);
+    curr_proc->p_time += (quantum_end_time - quantum_start_time) + curr_proc->p_time;
 
-    /*call scheduler*/
+    /*Place the Current Process on the Ready Queue*/
+    insertProcQ(&ready_queue, curr_proc);
+    scheduler();/*call scheduler*/
 }
+
+void IntervalTimerInterrupt()
+{
+    
+} 

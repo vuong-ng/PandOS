@@ -21,10 +21,4 @@ extern int device_sem [49];
 
 /*look in bottom of Bios Data page to find cause, fixed addreses*/
 
-
-
-
-
-
-
 #endif
