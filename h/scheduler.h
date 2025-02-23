@@ -44,11 +44,13 @@ void scheduler()
 
 }
 
-void switchContext(pcb_PTR proc)
+void switchContext(pcb_PTR next_proc)
 {
     /*load time???*/
 
-    LDST(&proc->p_s);
+    /*load state of process to be executed, return processor to whatever interrupt state and mode was in 
+    effect when the exception occured*/
+    LDST(&next_proc->p_s); 
 
 }
 #endif

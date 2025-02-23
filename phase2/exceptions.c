@@ -1,19 +1,11 @@
 #include "../h/exceptions.h"
 
-void uTLB_RefillHandler () 
-{
-    setENTRYHI(0x80000000);
-    setENTRYLO(0x00000000);
-    TLBWR();
-    LDST ((state_PTR) 0x0FFFF000);
-}
 
 void fooBar()
 {
     /*STST(&curr_proc->p_s);   (done by hardware, dont have to do)*/ /*store curr proc's state in BIOS Data Page right after exception raised (in 0x0FFFF000 ?)*/
     /*setCAUSE(curr_proc->p_s.s_cause); */  /*set Cause register*/
     
-    state_t* processor_0_exception_state = BIOSDATAPAGE;
     unsigned int cause = processor_0_exception_state->s_cause; 
 
     /*getCause gets real register (almost never needed)*/
@@ -22,7 +14,7 @@ void fooBar()
     /*4-way branch is good, all traps get same handler...*/
     switch ((cause >> 2) & 0b00000000000000000000000000001111)
     {
-    /*interrupt*/
+    /*Interrupt*/
     case 0:
     {
         /*while there is an unhandled interrupt, call interrupt handler*/
@@ -37,7 +29,12 @@ void fooBar()
     case 1:
     case 2:
     case 3:
+    {
+        passUp(PGFAULTEXCEPT);
+        uTLB_RefillHandler();
         break;
+    }
+        
 
     /*program traps*/
     case 4:
@@ -48,8 +45,11 @@ void fooBar()
     case 10:
     case 11:
     case 12:
-        trap_handler();
+    {
+        passUp(GENERALEXCEPT);
         break; 
+    }
+        
 
     /*syscalls*/
     case 8:
@@ -63,12 +63,17 @@ void fooBar()
     /*LDST(&curr_proc->p_s);*/
 }
 
+void uTLB_RefillHandler () 
+{
+    setENTRYHI(0x80000000);
+    setENTRYLO(0x00000000);
+    TLBWR();
+    LDST ((state_PTR) 0x0FFFF000);
+}
 
-
-void syscall_handler(pcb_PTR curr_proc)
+void syscallHandler(pcb_PTR curr_proc)
 {
     int a0 = curr_proc->p_s.s_a0;
-    state_t* processor_0_exception_state = BIOSDATAPAGE;
 
     /*check user/kernel mode and call trap handler if necessary*/
     int status = curr_proc->p_s.s_status;
@@ -78,7 +83,7 @@ void syscall_handler(pcb_PTR curr_proc)
     {
         (processor_0_exception_state->s_cause) &= 0b11111111111111111111111110000011;
         (processor_0_exception_state->s_cause) |= 0b00000000000000000000000000101000; /*set Cause.ExcCode to 10 - RI*/
-        trap_handler();
+        trapHandler();
     }
         
 
@@ -143,13 +148,20 @@ void syscall_handler(pcb_PTR curr_proc)
         pcb_PTR terminated_proc = outChild(curr_proc);
 
         /*step 2: if terminated_proc blocked on sem, increment its sem
-                  however if blocked on DEVICE sem, dont adjust sem*/
+                  however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
+        if (terminated_proc->p_semAdd != NULL)
+        {
+            /*check if terminated_proc is blocked on a device sem*/
+
+            /*NOT device sem*/
+            *(terminated_proc->p_semAdd) += 1;
+        }
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
         softblock_cnt--;
 
-        /*(??) curr_proc terminated, call scheduler to schedule new pcb*/
+        /*curr_proc terminated, call scheduler to schedule new pcb*/
         scheduler();
         break;
     }
@@ -242,10 +254,10 @@ void syscall_handler(pcb_PTR curr_proc)
     /*Get CPU Time (SYS6)*/
     case 6:
     {
-        /*step 1: put current proc's p_time in v0*/
-        curr_proc->p_s.s_v0 = curr_proc->p_time;
-
-        return curr_proc->p_time /* + cputime during current quantum (using TOD Clock)*/;
+        /*step 1: put current proc's p_time in v0 (?)*/
+        cpu_t quantum_end_time;
+        STCK(quantum_end_time);
+        curr_proc->p_s.s_v0 = curr_proc->p_time + (quantum_end_time - quantum_start_time);  /* + cputime during current quantum (using TOD Clock)*/
 
         break;
     }
@@ -290,7 +302,11 @@ void syscall_handler(pcb_PTR curr_proc)
     }
         
     default:
+    {
+        passUp(GENERALEXCEPT);
         break;
+    }
+        
     }
 
     increasePC(curr_proc);
@@ -299,6 +315,35 @@ void syscall_handler(pcb_PTR curr_proc)
 }
 
 
+void passUp(int passup_type)
+{
+   if(curr_proc->p_supportStruct == NULL)
+    {
+        /*(todo) sys2 handling*/
+    }   
+        
+    else
+    {
+        /*copy saved exception state from BIOS Data Page to correct sup_exceptState of curr_proc*/
+        state_t* sup_exceptState_p = &(curr_proc->p_supportStruct->sup_exceptState[passup_type]);
+        sup_exceptState_p->s_entryHI = processor_0_exception_state->s_entryHI;
+        sup_exceptState_p->s_cause = processor_0_exception_state->s_cause;
+        sup_exceptState_p->s_status = processor_0_exception_state->s_status;
+        sup_exceptState_p->s_pc = processor_0_exception_state->s_pc;
+        int i;
+        for (i = 0; i < STATEREGNUM; i++)
+            sup_exceptState_p->s_reg[i] = processor_0_exception_state->s_reg[i];
+
+        /*perform LDCXT using field from correct sup_exceptContext field of curr_proc*/
+        context_t* sup_exceptContext_p = &(curr_proc->p_supportStruct->sup_exceptContext[passup_type]);
+        LDCXT(sup_exceptContext_p->c_stackPtr, sup_exceptContext_p->c_status, sup_exceptContext_p->c_pc);
+    }
+}
+
+
+
+
+/*HELPER FUNCTIONS*/
 void increasePC(pcb_PTR curr_proc)
 {
     curr_proc->p_s.s_pc += 4;
@@ -312,10 +357,10 @@ void increasePC(pcb_PTR curr_proc)
 - block current proc on ASL, call insertBlocked
 - call Scheduler*/
  
- void blocking_syscalls(pcb_PTR curr_proc)
- {
-    increasePC(curr_proc);
- }
+void blocking_syscalls(pcb_PTR curr_proc)
+{
+increasePC(curr_proc);
+}
 
 
 
@@ -333,7 +378,4 @@ void terminateProc(pcb_PTR proc)
     return;
 }
 
-void trap_handler()
-{
 
-}

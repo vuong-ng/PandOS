@@ -99,10 +99,6 @@ typedef struct state_t {
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
 
-typedef struct support_t{
-
-} support_t;
-
 typedef struct pcb_t {
 /* process queue fields */
 struct pcb_t *p_next, /* pointer to next entry */
@@ -123,9 +119,7 @@ int          *p_semAdd; /* pointer to sema4 on which process blocked */
 support_t *p_supportStruct;
 
 /* ptr to support struct */
-
 } pcb_t;
-
 typedef pcb_t* pcb_PTR;
 
 typedef struct semd_t  
@@ -135,5 +129,18 @@ typedef struct semd_t
     pcb_PTR         s_procQ;
 } semd_t;
 
+/* process context */
+typedef struct context_t {
+/* process context fields */
+	unsigned int c_stackPtr, /* stack pointer value */
+				 c_status, /* status reg value */
+				 c_pc; /* PC address */
+} context_t;
+
+typedef struct support_t {
+	int 		sup_asid; /* Process Id (asid) */
+	state_t 	sup_exceptState[2]; /* stored excpt states */
+	context_t 	sup_exceptContext[2]; /* pass up contexts */
+} support_t;
 
 #endif

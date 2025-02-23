@@ -153,7 +153,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 void PLTInterrupt()
 {
     /*acknowledge PLT interrupt by loading timer with new value??*/
-    setTIMER(0);
+    setTIMER(0xFFFFFFFF);
 
     /*copy processor state (BIOS Data Page) into pcb's p_s */
     state_t* processor_0_exception_state = BIOSDATAPAGE;
@@ -167,16 +167,30 @@ void PLTInterrupt()
 
     /*update accumulated CPU time for curr_proc*/
 
-    unsigned int quantum_end_time;
+    cpu_t quantum_end_time;
     STCK(quantum_end_time);
-    curr_proc->p_time += (quantum_end_time - quantum_start_time) + curr_proc->p_time;
+    curr_proc->p_time = curr_proc->p_time + (quantum_end_time - quantum_start_time);
 
     /*Place the Current Process on the Ready Queue*/
     insertProcQ(&ready_queue, curr_proc);
-    scheduler();/*call scheduler*/
+    scheduler();    /*call scheduler*/
 }
 
 void IntervalTimerInterrupt()
 {
-    
+    /*acknowledge interrupt by loading interval timer with 100 millisecs*/
+    LDIT(100000);
+
+    /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
+    while (removeBlocked(&device_sem[48]) != NULL);
+
+    /*reset pseudo-clock semaphore to 0*/
+    device_sem[48] = 0;
+
+    /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)*/
+    state_t* processor_0_exception_state = BIOSDATAPAGE;
+    LDST(processor_0_exception_state);
+
+    /*call scheduler here ?*/
+
 } 
