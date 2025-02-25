@@ -15,7 +15,7 @@ typedef signed int cpu_t;
 typedef unsigned int memaddr;
 
 
-/* Device Register */
+/* Device Register (except terminals) */
 typedef struct {
 	unsigned int d_status;
 	unsigned int d_command;

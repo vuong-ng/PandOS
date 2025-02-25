@@ -4,11 +4,11 @@ int main()
 {
     /*Initialize Pass Up Vector*/
 
-    passupvector_t* xxx = PASSUPVECTOR;
-    xxx->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
-    xxx->tlb_refll_stackPtr = 0x20001000;
-    xxx->execption_handler =(memaddr) fooBar;
-    xxx->exception_stackPtr = 0x20001000;
+    passupvector_t* passupvec = PASSUPVECTOR;
+    passupvec->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
+    passupvec->tlb_refll_stackPtr = 0x20001000;
+    passupvec->execption_handler =(memaddr) fooBar;
+    passupvec->exception_stackPtr = 0x20001000;
 
 
     /*Initialize Level 2 variables*/
@@ -23,6 +23,9 @@ int main()
     
     /*initialize device_sem*/
     /*all zeros*/
+    int i;
+    for(i = 0; i < 49; i++)
+        device_sem[i] = 0;
 
     /*Load the system-wide Interval Timer with 100 milliseconds (convert to microsec)*/
     LDIT(100000);
@@ -34,7 +37,7 @@ int main()
 
 
     /*initializing the processor state */
-    /*interrupt (0) enabled, Local Timer (27) enabled, kernel mode on (1)*/
+    /*interrupt (0) enabled, Local Timer (27) enabled, kernel mode on (1), previous bits*/
     /*macros: INTRPTENABLED, PLTENABLED, KERNELON*/
     curr_proc->p_s.s_status = 0b00001000000000000000000000000100;
     curr_proc->p_s.s_sp = RAMBASEADDR + RAMBASESIZE;  /*set stack pointer to RAMTOP*/
@@ -50,7 +53,7 @@ int main()
     curr_proc->p_sib = NULL;
     curr_proc->p_sib_left = NULL;
 
-    curr_proc->p_time = 0;
+    curr_proc->p_time = (cpu_t) 0;
     curr_proc->p_semAdd = NULL;
     curr_proc->p_supportStruct = NULL;
 

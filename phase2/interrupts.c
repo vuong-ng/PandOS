@@ -4,85 +4,44 @@ void interruptHandler(unsigned int* cause)
 {
     /*step 1: determine highest priority pending interrupt*/
     int IP = (*cause);
-    int* interrupt_line_address;
-    int dev_no;
 
     /*Interrupt Line 0*/
-    if ((IP >> 15) & CLEAR31MSB == 1)
+    if ((IP >> INTERPROCINT + GETINTLINE) & CLEAR31MSB == ON)
     {
 
     }
     /*Interrupt Line 1*/
-    else if ((IP >> 14) & CLEAR31MSB == 1)
-    {
-
-    }
+    else if ((IP >> PLTINT + GETINTLINE) & CLEAR31MSB == ON)
+        PLTInterruptHandler();
     /*Interrupt Line 2*/
-    else if ((IP >> 13) & CLEAR31MSB == 1)
+    else if ((IP >> INTERVALTMRINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-
+        IntervalTimerInterruptHandler();
     }
     /*Interrupt Line 3*/
-    else if ((IP >> 12) & CLEAR31MSB  == 1)
+    else if ((IP >> DISKINT + GETINTLINE) & CLEAR31MSB  == ON)
     {
-        interrupt_line_address = INTERRUPTLINE3;
-        dev_no = getPendingDevice(interrupt_line_address);
-        if (dev_no == -1)
-            (*cause) & 0b1111111111111111111011111111111;  /*set interrupt line bit to 0*/
-        else
-        {
-            nonTimerInterruptHandler(3, dev_no);
-        } 
-
+        nonTimerInterruptHandler(DISKINT, getPendingDevice(INTERRUPTLINE3));
     }
     /*Interrupt Line 4*/
-    else if ((IP >> 11) & CLEAR31MSB == 1)
+    else if ((IP >> FLASHINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-        interrupt_line_address = INTERRUPTLINE4;
-        dev_no = getPendingDevice(interrupt_line_address);
-        if (dev_no == -1) 
-            (*cause) & 0b1111111111111111111101111111111; /*set interrupt line bit to 0*/
-        else
-        {
-            nonTimerInterruptHandler(4, dev_no); 
-        } 
+        nonTimerInterruptHandler(FLASHINT, getPendingDevice(INTERRUPTLINE4));
     }
     /*Interrupt Line 5*/
-    else if ((IP >> 10) & CLEAR31MSB == 1)
+    else if ((IP >> NETWINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-        interrupt_line_address = INTERRUPTLINE5;
-        dev_no = getPendingDevice(interrupt_line_address);
-        if (dev_no == -1)
-            (*cause) & 0b1111111111111111111110111111111; /*set interrupt line bit to 0*/
-        else
-        {
-            nonTimerInterruptHandler(5, dev_no);
-        }  
+        nonTimerInterruptHandler(NETWINT, getPendingDevice(INTERRUPTLINE5));
     }
     /*Interrupt Line 6*/
-    else if ((IP >> 9) & CLEAR31MSB == 1)
+    else if ((IP >> PRNTINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-        interrupt_line_address = INTERRUPTLINE6;
-        dev_no = getPendingDevice(interrupt_line_address);
-        if (dev_no == -1)
-            (*cause) & 0b1111111111111111111111011111111; /*set interrupt line bit to 0*/
-        else
-        {
-            nonTimerInterruptHandler(6, dev_no); 
-        }
+        nonTimerInterruptHandler(PRNTINT, getPendingDevice(INTERRUPTLINE6)); 
     }
     /*Interrupt Line 7*/
-    else if ((IP >> 8) & CLEAR31MSB == 1)
+    else if ((IP >> TERMINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-        interrupt_line_address = INTERRUPTLINE7;
-
-        dev_no = getPendingDevice(interrupt_line_address);
-        if (dev_no == -1)
-            (*cause) & 0b1111111111111111111111101111111; /*set interrupt line bit to 0*/
-        else 
-        {
-            nonTimerInterruptHandler(7, dev_no);
-        } 
+        nonTimerInterruptHandler(TERMINT, getPendingDevice(INTERRUPTLINE7));
     }
     /*No Pending Interrupt*/
     else 
@@ -95,15 +54,15 @@ void interruptHandler(unsigned int* cause)
 
 int getPendingDevice(int* interrupt_line_address)
 {
-    if      ((*interrupt_line_address >> 7) & CLEAR31MSB == 1) return 0;
-    else if ((*interrupt_line_address >> 6) & CLEAR31MSB == 1) return 1;
-    else if ((*interrupt_line_address >> 5) & CLEAR31MSB == 1) return 2;
-    else if ((*interrupt_line_address >> 4) & CLEAR31MSB == 1) return 3;
-    else if ((*interrupt_line_address >> 3) & CLEAR31MSB == 1) return 4;
-    else if ((*interrupt_line_address >> 2) & CLEAR31MSB == 1) return 5;
-    else if ((*interrupt_line_address >> 1) & CLEAR31MSB == 1) return 6;
-    else if ((*interrupt_line_address     ) & CLEAR31MSB == 1) return 7;
-    else                                                      return -1; /*no device pending left for this interrupt line*/
+    if      ((*interrupt_line_address >> 0) & CLEAR31MSB == ON) return 0;
+    else if ((*interrupt_line_address >> 1) & CLEAR31MSB == ON) return 1;
+    else if ((*interrupt_line_address >> 2) & CLEAR31MSB == ON) return 2;
+    else if ((*interrupt_line_address >> 3) & CLEAR31MSB == ON) return 3;
+    else if ((*interrupt_line_address >> 4) & CLEAR31MSB == ON) return 4;
+    else if ((*interrupt_line_address >> 5) & CLEAR31MSB == ON) return 5;
+    else if ((*interrupt_line_address >> 6) & CLEAR31MSB == ON) return 6;
+    else if ((*interrupt_line_address >> 7) & CLEAR31MSB == ON) return 7;
+    else                                                        return -1; /*no device pending left for this interrupt line*/
 }
 
 
@@ -112,30 +71,62 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     /*set handled device to 0 in here*/
 
     /*calculate address for this device's dev register*/
-    int devAddrBase = 0x10000054 + (interrupt_line - 3) * 0x80 + dev_no * 0x10;
+    /*
+    Given an interrupt line (IntLineNo) and a device number (DevNo) one can
+    compute the starting address of the device’s device register:
+    devAddrBase = 0x1000.0054 + ((IntlineNo - 3) * 0x80) + (DevNo * 0x10)
+    */
+    memaddr devAddrBase = 0x10000054 + (interrupt_line - 3) * 0x80 + dev_no * 0x10;
 
     /*save off status code from device register*/
     device_t* device_register = devAddrBase;
     unsigned int saved_status = device_register->d_status;
+    int* device_semAdd;
+
+
+
+    if(interrupt_line == TERMINT)
+    {
+        memaddr TRANSM_STATUS = device_register + 0x8;
+        /*if transmit ready, receive*/
+        if(TRANSM_STATUS & 0x000000FF == READY)
+        {
+            memaddr RECV_COMMAND = device_register + 0x4;
+            RECV_COMMAND = RECV_COMMAND & 0xFFFFFF00 | 0x00000001; /*set receive command to ACK*/
+        }
+        /*else transmit not ready, transmit*/
+        else
+        {
+            memaddr TRANSM_COMMAND = device_register + 0xC;
+            TRANSM_COMMAND = TRANSM_COMMAND & 0xFFFFFF00 | 0x00000001; /*set transmit command to ACK*/
+        }
+
+    }
+
 
     /*write ACK command code in device register, or write a new command*/
     device_register->d_command = ACK;
 
     /*perform V on Nucleus maintain semaphore of this device. */
-    int* device_semAdd;
-    /*not terminal (HANDLED LATER)*/
-    if(interrupt_line != 7)
+    
+    /*not terminal */
+    if(interrupt_line != TERMINT)
         device_semAdd = device_sem[(interrupt_line - 3) * 8 + dev_no];
+    /*terminal (HANDLED LATER)*/
     else
         device_semAdd = device_sem[(interrupt_line - 3) * 8 + dev_no * 2];
-    *(device_semAdd) += 1;
+    (*device_semAdd)++;
 
     /*unblock pcb that initiated this I/O op and request to wait for completion via SYS5*/
     pcb_PTR unblocked_pcb = removeBlocked(device_semAdd);
 
     /*if V returns NULL, return to curr_proc (if there's no curr_proc, Scheduler calls WAIT())*/
     if (unblocked_pcb == NULL)
+    {
+
         return;
+    }
+        
 
     /*place saved off status code into the new unblocked pcb's v0 reg*/
     unblocked_pcb->p_s.s_v0 = saved_status;
@@ -146,27 +137,18 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 
     /*return to curr_proc (if there's no curr_proc, Scheduler calls WAIT()), 
     perform LDST on saved exception state on BIOS Data Page (processor 0 excp state)*/
-    state_t* processor_0_exception_state = BIOSDATAPAGE; 
-    LDST(processor_0_exception_state);  /*perform LDST manually here??????*/
+    LDST(CP0_exception_s);  /*perform LDST manually here?*/
 }
 
-void PLTInterrupt()
+void PLTInterruptHandler()
 {
-    /*acknowledge PLT interrupt by loading timer with new value??*/
-    setTIMER(0xFFFFFFFF);
+    /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
+    setTIMER(0x7FFFFFFF);
 
     /*copy processor state (BIOS Data Page) into pcb's p_s */
-    state_t* processor_0_exception_state = BIOSDATAPAGE;
-    curr_proc->p_s.s_entryHI = processor_0_exception_state->s_entryHI;
-    curr_proc->p_s.s_cause = processor_0_exception_state->s_cause;
-    curr_proc->p_s.s_status = processor_0_exception_state->s_status;
-    curr_proc->p_s.s_pc = processor_0_exception_state->s_pc;
-    int i;
-    for (i = 0; i < STATEREGNUM; i++)
-        curr_proc->p_s.s_reg[i] = processor_0_exception_state->s_reg[i];
+    copyState(&(curr_proc->p_s), CP0_exception_s);
 
     /*update accumulated CPU time for curr_proc*/
-
     cpu_t quantum_end_time;
     STCK(quantum_end_time);
     curr_proc->p_time = curr_proc->p_time + (quantum_end_time - quantum_start_time);
@@ -176,21 +158,18 @@ void PLTInterrupt()
     scheduler();    /*call scheduler*/
 }
 
-void IntervalTimerInterrupt()
+void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
     LDIT(100000);
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
-    while (removeBlocked(&device_sem[48]) != NULL);
+    while (removeBlocked(&device_sem[PSEUDOCLK]) != NULL);
 
     /*reset pseudo-clock semaphore to 0*/
-    device_sem[48] = 0;
+    device_sem[PSEUDOCLK] = 0;
 
     /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)*/
-    state_t* processor_0_exception_state = BIOSDATAPAGE;
-    LDST(processor_0_exception_state);
-
-    /*call scheduler here ?*/
-
+    LDST(CP0_exception_s);
 } 
+

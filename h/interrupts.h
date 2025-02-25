@@ -1,8 +1,9 @@
 #ifndef INTERRUPTS
 #define INTERRUPTS
 #include "../h/initial.h"
+#include "../h/exceptions.h"
 #define CLEAR31MSB 0x00000001
-#define RESETHANDLEDDEVICE 0b11111111111111111111111101111111
+#define GETINTLINE 8
 
 extern void interruptHandler(unsigned int* cause);
 

@@ -16,7 +16,4 @@ extern pcb_PTR ready_queue; /*tail pointer to a queue of pcbs that are in the �
 extern pcb_PTR curr_proc; /*pointer to the pcb that is in the “running” state, i.e. the current executing process.*/
 extern int device_sem [49];
 
-
-/*look in bottom of Bios Data page to find cause, fixed addreses*/
-
 #endif

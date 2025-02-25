@@ -11,6 +11,9 @@
 #define ZERO 0
 #define MAXINT 2147483647
 
+/*index for pseudo-clock in device semaphores*/
+#define PSEUDOCLK 48
+
 #define MAXPROC 20
 
 /* Hardware & software constants */
@@ -27,6 +30,8 @@
 
 
 /* utility constants */
+#define ON                  1
+#define OFF                 0
 #define	TRUE			    1
 #define	FALSE			    0
 #define HIDDEN			  static
@@ -35,6 +40,9 @@
 #define NULL 			    ((void *)0xFFFFFFFF)
 
 /* device interrupts */
+#define INTERPROCINT      0
+#define PLTINT            1
+#define INTERVALTMRINT    2
 #define DISKINT			  3
 #define FLASHINT 		  4
 #define NETWINT 		  5
@@ -75,6 +83,16 @@
 #define RAMSTART        0x20000000
 #define BIOSDATAPAGE    0x0FFFF000
 #define	PASSUPVECTOR	  0x0FFFF900
+
+/* system call codes */
+#define	CREATETHREAD	1	/* create thread */
+#define	TERMINATETHREAD	2	/* terminate thread */
+#define	PASSERN			3	/* P a semaphore */
+#define	VERHOGEN		4	/* V a semaphore */
+#define	WAITIO			5	/* delay on a io semaphore */
+#define	GETCPUTIME		6	/* get cpu time used to date */
+#define	WAITCLOCK		7	/* delay on the clock semaphore */
+#define	GETSPTPTR		8	/* return support structure ptr. */
 
 /*Interrupting Devices Bitmap*/
 #define INTERRUPTLINEBASE 0x10000040
