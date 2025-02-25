@@ -89,6 +89,7 @@ void syscallHandler()
     }
         
     int a0 = curr_proc->p_s.s_a0;
+    cpu_t quantum_end_time;
     switch (a0)
     {
     /*Create Process (SYS1)*/
@@ -131,6 +132,9 @@ void syscallHandler()
         /*step 6: p_semAdd to NULL*/
         new_proc->p_semAdd = NULL;
         
+        /*for non-blocking syscalls, increasePC & LDST from BIOS Data Page*/
+        increasePC(curr_proc);
+        LDST(CP0_exception_s);
          /*ret control to curr proc (do nothing here)*/
         break;
     }
@@ -141,23 +145,25 @@ void syscallHandler()
     {
         /*step 1: remove the process and all its descendants*/
         terminateProc(curr_proc->p_child);
-        pcb_PTR terminated_proc = outChild(curr_proc);
+        pcb_PTR terminated = outChild(curr_proc);
 
         /*step 2: if terminated_proc blocked on sem, increment its sem
                   however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
-        if (terminated_proc->p_semAdd != NULL)
+        /*blocked */
+        if (terminated->p_semAdd != NULL)
         {
-            /*(todo) check if terminated_proc is blocked on a device sem*/
-
-            /*NOT device sem*/
-            (*(terminated_proc->p_semAdd))++;
+            /*sem is not device sem*/
+            if(!(isDeviceSem(terminated->p_semAdd)))
+                (*terminated->p_semAdd)++;
+            softblock_cnt--;
         }
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
-        softblock_cnt--;
 
         /*curr_proc terminated, call scheduler to schedule new pcb*/
+        increasePC(curr_proc);
+        
         scheduler();
         break;
     }
@@ -169,9 +175,6 @@ void syscallHandler()
         /*copy processor state into curr proc state*/
         copyState(&(curr_proc->p_s), CP0_exception_s);
 
-        /*Update the accumulated CPU time for the Current Process*/
-
-
 
         int* semAdd = curr_proc->p_s.s_a1;
         (*semAdd)--;
@@ -182,7 +185,15 @@ void syscallHandler()
         /*else: process blocked on ASL, call Scheduler*/
         else
         {
+            increasePC(curr_proc);
+            copyState(&(curr_proc->p_s), CP0_exception_s);
+
+            /*(blocking) Update the accumulated CPU time for the Current Process*/
+            STCK(quantum_end_time);
+            curr_proc->p_time += (quantum_end_time - quantum_start_time);
+
             int insert_successful = insertBlocked(semAdd, curr_proc);
+            
             scheduler();
         }
         break;
@@ -197,6 +208,8 @@ void syscallHandler()
         pcb_PTR removed;
         if (*(semAdd) <= 0)
             removed = removeBlocked(semAdd);
+        increasePC(curr_proc);
+        LDST(CP0_exception_s);
         break;
     }
         
@@ -207,9 +220,6 @@ void syscallHandler()
         /*copy processor state into curr proc state*/
         copyState(&(curr_proc->p_s), CP0_exception_s);
         
-        /*(todo) Update the accumulated CPU time for the Current Process*/
-
-
 
         int interrupt_line = curr_proc->p_s.s_a1;
         int device_number = curr_proc->p_s.s_a2;
@@ -226,8 +236,18 @@ void syscallHandler()
         (*device_semAdd)--;
         /*(good practice) check if *device_semAdd < 0*/
 
-         /*(always) block the Current Process on the ASL, call scheduler*/
+        
+
+        increasePC(curr_proc);
+        copyState(&(curr_proc->p_s), CP0_exception_s);
+
+         /*(blocking) Update the accumulated CPU time for the Current Process*/
+        STCK(quantum_end_time);
+        curr_proc->p_time += (quantum_end_time - quantum_start_time);
+
+        /*(always) block the Current Process on the ASL, call scheduler*/
         int insert_successful = insertBlocked(device_semAdd, curr_proc);
+        
         scheduler();
 
         break;
@@ -237,10 +257,10 @@ void syscallHandler()
     case GETCPUTIME:
     {
         /*step 1: put current proc's p_time in v0 + used quantum*/
-        cpu_t quantum_end_time;
         STCK(quantum_end_time);
         curr_proc->p_s.s_v0 = curr_proc->p_time + (quantum_end_time - quantum_start_time); 
-
+        increasePC(curr_proc);
+        LDST(CP0_exception_s);
         break;
     }
         
@@ -261,7 +281,13 @@ void syscallHandler()
 
         /*step 3: block current process in ASL, then call Scheduler*/
 
+        increasePC(curr_proc);
+        copyState(&(curr_proc->p_s), CP0_exception_s);
+
+        STCK(quantum_end_time);
+        curr_proc->p_time += (quantum_end_time - quantum_start_time);
         int insert_successful = insertBlocked(pseudo_clk_semAdd, curr_proc);
+        
         scheduler();
         /*step 2: performs V (increase) every 100 millisecond on pseudo-clock sem*/
 
@@ -273,18 +299,19 @@ void syscallHandler()
     {
         /*step 1: return p_supportStruct if exists, otherwise NULL*/
         curr_proc->p_s.s_a2 = curr_proc->p_supportStruct;
+        increasePC(curr_proc);
+        LDST(CP0_exception_s);
         break;
     }
         
     default:
     {
+        increasePC(curr_proc);
         passUp(GENERALEXCEPT);
         break;
     }
         
     }
-
-    increasePC(curr_proc);
 
 
 }
@@ -318,6 +345,13 @@ void updateTime(pcb_PTR proc)
 {
 
 }
+int isDeviceSem(int* semAdd)
+{
+    int i, found = FALSE;
+    for (i = 0; i < 49; i++)
+        found |= (&device_sem[i] == semAdd);
+    return found;
+}
 
 /*copy src to dest*/
 void copyState(state_t* dest, state_t* src)
@@ -340,7 +374,8 @@ void copyState(state_t* dest, state_t* src)
  
 void blocking_syscalls(pcb_PTR curr_proc)
 {
-increasePC(curr_proc);
+
+
 }
 
 
@@ -351,6 +386,17 @@ void terminateProc(pcb_PTR proc)
 {
     if (proc == NULL)
         return;
+
+    /*blocked */
+    if (proc->p_semAdd != NULL)
+    {
+        /*sem is not device sem*/
+        if(!(isDeviceSem(proc->p_semAdd)))
+            (*proc->p_semAdd)++;
+        softblock_cnt--;
+    }
+    process_cnt--;
+
     pcb_PTR sib = proc->p_sib;
     if(sib != NULL)
         terminateProc(sib);

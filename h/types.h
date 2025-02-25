@@ -23,6 +23,7 @@ typedef struct {
 	unsigned int d_data1;
 } device_t;
 
+/* Device Register (terminals) */
 #define t_recv_status		d_status
 #define t_recv_command		d_command
 #define t_transm_status		d_data0

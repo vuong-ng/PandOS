@@ -84,37 +84,47 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     int* device_semAdd;
 
 
-
     if(interrupt_line == TERMINT)
     {
-        memaddr TRANSM_STATUS = device_register + 0x8;
-        /*if transmit ready, receive*/
-        if(TRANSM_STATUS & 0x000000FF == READY)
+        memaddr TRANSM_STATUS = device_register->t_transm_status;
+        memaddr TRANSM_COMMAND = device_register->t_transm_command;
+        memaddr RECV_COMMAND = device_register->t_recv_command;
+        memaddr RECV_STATUS = device_register->t_recv_status;
+        /*transmit not ready -> transmitter interrupt
+        transmit ready -> interrupt must be receiver*/
+
+        /*if transmit not ready (there is transmit interrupt), acknowledge (complete) */
+        if(TRANSM_STATUS & 0x000000FF != READY && TRANSM_STATUS & 0x000000FF == 5)
         {
-            memaddr RECV_COMMAND = device_register + 0x4;
-            RECV_COMMAND = RECV_COMMAND & 0xFFFFFF00 | 0x00000001; /*set receive command to ACK*/
+            TRANSM_COMMAND = TRANSM_COMMAND & 0xFFFFFF00 | ACK; /*set transmit command to ACK, which sets TRANSM_STATUS to READY*/
+            /*put success/error code (0,2,4,5) in v_0*/
+
+            device_semAdd = device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 0];
+
+
         }
-        /*else transmit not ready, transmit*/
-        else
+        /*else if transmit ready (there is receive interrupt), acknowledge (complete)*/
+        else if (TRANSM_STATUS & 0x000000FF == READY && RECV_STATUS & 0x000000FF == 5)
         {
-            memaddr TRANSM_COMMAND = device_register + 0xC;
-            TRANSM_COMMAND = TRANSM_COMMAND & 0xFFFFFF00 | 0x00000001; /*set transmit command to ACK*/
+            RECV_COMMAND = RECV_COMMAND & 0xFFFFFF00 | ACK; /*set receive command to ACK*/
+            /*put success/error code (0,2,4,5) in v_0*/
+            
+            device_semAdd = device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 1];
         }
+        
 
     }
-
-
-    /*write ACK command code in device register, or write a new command*/
-    device_register->d_command = ACK;
-
-    /*perform V on Nucleus maintain semaphore of this device. */
-    
     /*not terminal */
-    if(interrupt_line != TERMINT)
-        device_semAdd = device_sem[(interrupt_line - 3) * 8 + dev_no];
-    /*terminal (HANDLED LATER)*/
     else
-        device_semAdd = device_sem[(interrupt_line - 3) * 8 + dev_no * 2];
+    {
+        /*write ACK command code in device register, or write a new command*/
+        device_register->d_command = ACK;
+
+         /*perform V on Nucleus maintain semaphore of this device. */
+        device_semAdd = device_sem[(interrupt_line - 3) * 8 + dev_no];
+    }
+   
+        
     (*device_semAdd)++;
 
     /*unblock pcb that initiated this I/O op and request to wait for completion via SYS5*/
