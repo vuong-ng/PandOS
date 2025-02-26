@@ -305,10 +305,10 @@ return a pointer to this removed first child pcb.
 
 pcb_PTR outChild (pcb_PTR p)
 /*
-Make the pcb pointed to by p no longer the child of its parent. 
-Note that the element pointed to by p need not be the first child of its parent. 
-PARAMETERS: pointer to child pcb p
-RETURN VALUES: NULL if the pcb pointed to by p has no parent; otherwise return p
+* Make the pcb pointed to by p no longer the child of its parent. 
+* Note that the element pointed to by p need not be the first child of its parent. 
+* PARAMETERS: pointer to child pcb p
+* RETURN VALUES: NULL if the pcb pointed to by p has no parent; otherwise return p
 */
 {
     if (p->p_prnt == NULL)

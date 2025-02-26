@@ -3,10 +3,6 @@
 
 #include "../h/const.h"
 #include "../h/types.h"
-#include "../h/pcb.h"
-#include "../h/asl.h"
-
-#include "../h/scheduler.h"
 
 extern void test();
 

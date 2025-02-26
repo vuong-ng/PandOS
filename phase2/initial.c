@@ -1,5 +1,23 @@
+
+#include "../h/pcb.h"
+#include "../h/asl.h"
+
 #include "../h/initial.h"
 #include "../h/exceptions.h"
+#include "../h/scheduler.h"
+
+int process_cnt; /*number of started, but not yet terminated processes*/
+int softblock_cnt; /*number of started, but not terminated processes that in are the “blocked” state due to an I/O or timer request*/
+pcb_PTR ready_queue; /*tail pointer to a queue of pcbs that are in the “ready” state*/
+pcb_PTR curr_proc; /*pointer to the pcb that is in the “running” state, i.e. the current executing process.*/
+int device_sem [49];
+
+void debug(int param1, int param2, int param3, int param4)
+{
+    int a = 0;
+    a--;
+    int b = a-1;
+}
 int main()
 {
     /*Initialize Pass Up Vector*/
@@ -20,7 +38,7 @@ int main()
     softblock_cnt = 0;
     ready_queue = mkEmptyProcQ();
     curr_proc = NULL;
-    
+
     /*initialize device_sem*/
     /*all zeros*/
     int i;
@@ -37,9 +55,9 @@ int main()
 
 
     /*initializing the processor state */
-    /*interrupt (0) enabled, Local Timer (27) enabled, kernel mode on (1), previous bits*/
+    /*Local Timer (27) enabled, interrupt mask on (15-8), interrupt (2) enabled, kernel mode on (= 0), previous bits*/
     /*macros: INTRPTENABLED, PLTENABLED, KERNELON*/
-    curr_proc->p_s.s_status = 0b00001000000000000000000000000100;
+    curr_proc->p_s.s_status = TEBITON | IMON | IEPBITON;
     curr_proc->p_s.s_sp = RAMBASEADDR + RAMBASESIZE;  /*set stack pointer to RAMTOP*/
     curr_proc->p_s.s_pc = (memaddr) test;   /*set pc to test*/
     curr_proc->p_s.s_t9 = (memaddr) test; 
@@ -62,5 +80,6 @@ int main()
     scheduler();
 
     /*do nothing here, scheduler never returns*/ 
+    return 0;
 
 }

@@ -7,6 +7,14 @@
  * 
  ****************************************************************************/
 
+/*bit manipulation constants*/
+#define IEPBITON		0x00000004
+#define KUPBITON		0x00000008
+#define KUPBITOFF		0xFFFFFFF7
+#define TEBITON			0x08000000
+#define ALLOFF			0x00000000
+#define IMON            0x0000FF00
+
 /*semaphores for sentinel nodes*/
 #define ZERO 0
 #define MAXINT 2147483647
