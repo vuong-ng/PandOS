@@ -12,12 +12,7 @@ pcb_PTR ready_queue; /*tail pointer to a queue of pcbs that are in the “ready�
 pcb_PTR curr_proc; /*pointer to the pcb that is in the “running” state, i.e. the current executing process.*/
 int device_sem [49];
 
-void debug(int param1, int param2, int param3, int param4)
-{
-    int a = 0;
-    a--;
-    int b = a-1;
-}
+
 int main()
 {
     /*Initialize Pass Up Vector*/
@@ -58,7 +53,7 @@ int main()
     /*Local Timer (27) enabled, interrupt mask on (15-8), interrupt (2) enabled, kernel mode on (= 0), previous bits*/
     /*macros: INTRPTENABLED, PLTENABLED, KERNELON*/
     curr_proc->p_s.s_status = TEBITON | IMON | IEPBITON;
-    curr_proc->p_s.s_sp = RAMBASEADDR + RAMBASESIZE;  /*set stack pointer to RAMTOP*/
+    curr_proc->p_s.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE);  /*set stack pointer to RAMTOP*/
     curr_proc->p_s.s_pc = (memaddr) test;   /*set pc to test*/
     curr_proc->p_s.s_t9 = (memaddr) test; 
 
@@ -74,6 +69,7 @@ int main()
     curr_proc->p_time = (cpu_t) 0;
     curr_proc->p_semAdd = NULL;
     curr_proc->p_supportStruct = NULL;
+
 
 
     /*call the Scheduler*/

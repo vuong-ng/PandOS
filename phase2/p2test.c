@@ -122,11 +122,14 @@ void print(char *msg) {
 	char *s = msg;
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
-	
-	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
+	SYSCALL(PASSERN, (int)&term_mut, 0, 0);			/* P(term_mut) */
+	debug(s, msg, 12, 12);
+
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
+		debug(25,25,25,25);
+		status = SYSCALL(WAITIO, TERMINT, 0, 0);
+		debug(26,26,26,26);	
 		if ((status & TERMSTATMASK) != RECVD)
 			PANIC();
 		s++;	
@@ -147,6 +150,15 @@ void uTLB_RefillHandler () {
 }
 
 
+
+
+void debug(int param1, int param2, int param3, int param4)
+{
+    int a = 0;
+    a--;
+    int b = a-1;
+}
+
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
@@ -154,7 +166,7 @@ void uTLB_RefillHandler () {
 void test() {	
 	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
-
+	debug(69, ((state_t*) BIOSDATAPAGE)->s_cause, 69,69);
 	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */

@@ -9,9 +9,11 @@
 
 /*bit manipulation constants*/
 #define IEPBITON		0x00000004
+#define IECBITON        0x00000001
 #define KUPBITON		0x00000008
 #define KUPBITOFF		0xFFFFFFF7
 #define TEBITON			0x08000000
+#define TEBITOFF        0xF7FFFFFF
 #define ALLOFF			0x00000000
 #define IMON            0x0000FF00
 
