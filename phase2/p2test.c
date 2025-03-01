@@ -154,6 +154,7 @@ void debug(int param1, int param2, int param3, int param4)
     int a = 0;
     a--;
     int b = a-1;
+	return;
 }
 
 /*********************************************************************/
@@ -163,7 +164,7 @@ void debug(int param1, int param2, int param3, int param4)
 void test() {	
 	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
-	/*print("p1 v(testsem)\n");*/
+	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */
 
@@ -319,7 +320,7 @@ void p2() {
 	/* initialize all semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)
 		s[i] = 0;
-
+	debug(50,50,50,50);
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
 		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */

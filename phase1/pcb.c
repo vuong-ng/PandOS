@@ -126,6 +126,9 @@ pcb to be inserted p
 RETURN VALUES: void
 */
 {
+    if(p == NULL)
+        return;
+        
     if (emptyProcQ(*tp))
     /*process queue empty, point *tp to p
     and set p's p_next and p_prev pointers to point to p*/

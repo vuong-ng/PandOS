@@ -189,7 +189,7 @@ void PLTInterruptHandler()
     /*debug(46,46,46,46);*/
     /*debug(curr_proc,49,49,49);*/
     setTIMER(0x7FFFFFFF);
-    debug(curr_proc,49,49,49);
+    /*debug(curr_proc,49,49,49);*/
     /*copy processor state (BIOS Data Page) into pcb's p_s */
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
 
@@ -207,7 +207,7 @@ void PLTInterruptHandler()
 void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
-    debug(48,48,48,48);
+    /*debug(48,48,48,48);*/
     LDIT(100000);
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/

@@ -187,9 +187,12 @@ void syscallHandler()
         /*if sem >= 0 -> running (not blocked), return control to current process*/
         if (*(semAdd) >= 0)
         {
+            /*debug(333,333,333,333);*/
+            insertProcQ(&ready_queue, removeBlocked(semAdd)); /*safety measures*/
+            
             increasePC();
             /*free sem back to semdFree list*/
-
+            /**/
             
             LDST((state_t*) BIOSDATAPAGE);
         }
@@ -198,20 +201,25 @@ void syscallHandler()
         /*else: process blocked on ASL, call Scheduler*/
         else
         {
-            increasePC();
+            /*debug(9998,9998,9998,9998);*/
+            increasePC();   
             copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
             
             /*(blocking) Update the accumulated CPU time for the Current Process*/
             STCK(quantum_end_time);
             curr_proc->p_time += (quantum_end_time - quantum_start_time);
 
-            if(!insertBlocked(semAdd, curr_proc))
-                softblock_cnt++;
-            else
+            if(!insertBlocked(semAdd, curr_proc))  /*blocked successfully*/
             {
-                increasePC();
-                LDST((state_t*) BIOSDATAPAGE);
+                softblock_cnt++;
+                scheduler();
+                
             }
+            else /*can't block, return to curr*/
+                /*LDST((state_t*) BIOSDATAPAGE);*/
+                PANIC();
+
+            
             /*debug(39,40,41,42);*/
             scheduler();
         }
@@ -225,10 +233,12 @@ void syscallHandler()
         /*debug(process_cnt,((state_t*) BIOSDATAPAGE)->s_a2,4,4);*/
 
         int* semAdd = ((state_t*) BIOSDATAPAGE)->s_a1;
+
         (*semAdd)++;
         
         if (*(semAdd) <= 0)
         {
+            /*debug(9999,9999,9999,9999);*/
             pcb_PTR removed = removeBlocked(semAdd);
             insertProcQ(&ready_queue, removed);
             if(removed != NULL)
