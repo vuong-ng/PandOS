@@ -8,8 +8,9 @@ void scheduler()
 {
     /*Remove the pcb from the head of the Ready Queue and store the pointer to the pcb in the Current Process field*/
     
+    curr_proc = removeProcQ(&ready_queue); 
     /*ready queue empty*/
-    if(emptyProcQ(ready_queue))
+    if(curr_proc == NULL)
     {
         /*REDO ORDER OF CHECKING*/
         /*If the Process Count is zero invoke the HALT BIOS service/instruction.*/
@@ -23,8 +24,8 @@ void scheduler()
         {
             /*setSTATUS(getSTATUS() | 0b00000000000000000000000000000001);*/ /*macro: INTRPTENABLED*/    /*enable interrupt*/
             /*setSTATUS(getSTATUS() & 0b11110111111111111111111111111111);*/ /*macro: PLTDISABLED*/   /*disable PLT*/
-            curr_proc = NULL;
-            debug(18,18,18,getSTATUS());
+            /*curr_proc = NULL;*/
+            /*debug(18,18,18,getSTATUS());*/
             unsigned int wait_status = getSTATUS() | IMON & TEBITOFF | IECBITON ;
             setSTATUS(wait_status);
             /*debug(19,19,19,20);*/
@@ -41,10 +42,11 @@ void scheduler()
     /*ready queue not empty*/
     else
     {   
-        curr_proc = removeProcQ(&ready_queue); 
+        
+        /*debug(1004,curr_proc,1004,1004);*/
         setTIMER(LDIT(5000)); /*local Timer (PLT)*/
         STCK(quantum_start_time);  /*start quantum of current process*/
-        debug(68, ((state_t*) BIOSDATAPAGE)->s_cause, curr_proc->p_s.s_status ,curr_proc);
+        /*debug(68, ((state_t*) BIOSDATAPAGE)->s_cause, curr_proc->p_s.s_status ,curr_proc);*/
         LDST(&(curr_proc->p_s));
     }
 }

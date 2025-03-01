@@ -11,12 +11,12 @@ void fooBar()
     /*STST(&curr_proc->p_s);   (done by hardware, dont have to do)*/ /*store curr proc's state in BIOS Data Page right after exception raised (in 0x0FFFF000 ?)*/
     /*setCAUSE(curr_proc->p_s.s_cause); */  /*set Cause register*/
     fooBarCount++;
-    
+    /*debug(10,10,10,10);*/
 
     unsigned int cause = ((state_t*) BIOSDATAPAGE)->s_cause; 
     unsigned int cause_original = ((state_t*) BIOSDATAPAGE)->s_cause;
 
-    debug(fooBarCount, cause, 20,20);
+    /*debug(fooBarCount, cause, 20,20);*/
     
     /*4-way branch, all traps get same handler*/
     switch ((cause >> 2) & 0b00000000000000000000000000011111)
@@ -109,19 +109,20 @@ void syscallHandler()
         /* new_proc == NULL -> insufficient resources, put err code -1 in v0*/
         if (new_proc == NULL)
         {
-            new_proc->p_s.s_v0 = -1;
+            curr_proc->p_s.s_v0 = -1;
             return;
         }
         else 
-            new_proc->p_s.s_v0 = 0;
+            curr_proc->p_s.s_v0 = 0;
 
 
         /*step 1: p_s from a1*/
         copyState(&(new_proc->p_s), a1);
 
-
+        
         /*step 2: p_supportStruct from a2*/
-        copySupport(new_proc->p_supportStruct, a2);
+        if(a2 != NULL)
+            copySupport(new_proc->p_supportStruct, a2);
 
 
         /*step 3: place newProc on readyQueue */
@@ -151,6 +152,7 @@ void syscallHandler()
         /*step 1: remove the process and all its descendants*/
         terminateProc(curr_proc->p_child);
         outChild(curr_proc);
+        outProcQ(&ready_queue, curr_proc);
 
         /*step 2: if terminated_proc blocked on sem, increment its sem
                   however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
@@ -186,7 +188,9 @@ void syscallHandler()
         if (*(semAdd) >= 0)
         {
             increasePC();
+            /*free sem back to semdFree list*/
 
+            
             LDST((state_t*) BIOSDATAPAGE);
         }
             
@@ -196,13 +200,19 @@ void syscallHandler()
         {
             increasePC();
             copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
-
+            
             /*(blocking) Update the accumulated CPU time for the Current Process*/
             STCK(quantum_end_time);
             curr_proc->p_time += (quantum_end_time - quantum_start_time);
 
-            int insert_successful = insertBlocked(semAdd, curr_proc);
-            softblock_cnt++;
+            if(!insertBlocked(semAdd, curr_proc))
+                softblock_cnt++;
+            else
+            {
+                increasePC();
+                LDST((state_t*) BIOSDATAPAGE);
+            }
+            /*debug(39,40,41,42);*/
             scheduler();
         }
         break;
@@ -219,11 +229,13 @@ void syscallHandler()
         
         if (*(semAdd) <= 0)
         {
-            removeBlocked(semAdd);
-            softblock_cnt--;
+            pcb_PTR removed = removeBlocked(semAdd);
+            insertProcQ(&ready_queue, removed);
+            if(removed != NULL)
+                softblock_cnt--;
         }
             
-
+    
         /*return control to current process*/
         increasePC();
         LDST((state_t*) BIOSDATAPAGE);
@@ -273,7 +285,7 @@ void syscallHandler()
         /*(always) block the Current Process on the ASL, call scheduler*/
         int insert_successful = insertBlocked(device_semAdd, curr_proc);
         softblock_cnt++;
-        debug(terminal_read,process_cnt,softblock_cnt,5);
+        /*debug(terminal_read,process_cnt,softblock_cnt,5);*/
         scheduler();
 
         break;
@@ -466,12 +478,12 @@ void terminateProc(pcb_PTR proc)
     }
     process_cnt--;
 
-    pcb_PTR sib = proc->p_sib;
-    terminateProc(sib);
+    terminateProc(proc->p_sib);
     terminateProc(proc->p_child);
 
-    pcb_PTR terminated = outChild(proc);
-    freePcb(terminated);
+    outChild(proc);
+    outProcQ(&ready_queue, proc);
+    freePcb(proc);
     return;
 }
 

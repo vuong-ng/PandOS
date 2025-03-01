@@ -8,7 +8,7 @@
 
 void interruptHandler(unsigned int cause)
 {
-    debug(10,10,10,10);
+    /*debug(10,10,10,10);*/
     /*step 1: determine highest priority pending interrupt*/
     int IP = cause;
 
@@ -48,7 +48,6 @@ void interruptHandler(unsigned int cause)
     /*Interrupt Line 7*/
     else if ((IP >> TERMINT + GETINTLINE) & CLEAR31MSB == ON)
     {
-        /*debug(7,7,7, * (int*) INTERRUPTLINE7);*/
         nonTimerInterruptHandler(TERMINT, getPendingDevice(INTERRUPTLINE7));
     }
     /*No Pending Interrupt*/
@@ -62,7 +61,6 @@ void interruptHandler(unsigned int cause)
 
 int getPendingDevice(int* interrupt_line_address)
 {
-    debug(6,7,8,*interrupt_line_address);
     if      ((*interrupt_line_address >> 0) & CLEAR31MSB == ON) return 0;
     else if ((*interrupt_line_address >> 1) & CLEAR31MSB == ON) return 1;
     else if ((*interrupt_line_address >> 2) & CLEAR31MSB == ON) return 2;
@@ -90,7 +88,8 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     
 
     /*save off status code from device register*/
-    unsigned int saved_status = device_register->d_status;
+    unsigned int saved_status;
+    /*debug(saved_status, 1006,1006,1006);*/
     int* device_semAdd;
 
     if(interrupt_line == TERMINT)
@@ -108,55 +107,54 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         /*if transmit not ready (there is transmit interrupt), acknowledge (complete) */
         if(device_register->t_transm_status & 0x000000FF != READY)
         {
-            
+            saved_status = device_register->t_transm_status;
             device_register->t_transm_command = (device_register->t_transm_command) & 0xFFFFFF00 | ACK; /*set transmit command to ACK, which sets TRANSM_STATUS to READY/CHAR TRANSMITTED*/
             
-            /*put status code in v_0*/
-            /*debug(7,TRANSM_COMMAND,device_register->t_transm_command,TRANSM_STATUS);*/
-
-            ((state_t*) BIOSDATAPAGE)->s_v0 = device_register->t_transm_status;
-
             device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 0];
         }
         /*else if transmit ready (there is receive interrupt), acknowledge (complete)*/
         else if (device_register->t_transm_status & 0x000000FF == READY)
         {
+            saved_status = device_register->t_recv_status;
+
             device_register->t_recv_command = device_register->t_recv_command & 0xFFFFFF00 | ACK; /*set receive command to ACK*/
-            /*put status code in v_0*/
-            curr_proc->p_s.s_v0 = device_register->t_recv_status;
-            
             device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 1];
         }
-        debug(8,8,8, (interrupt_line - 3) * DEVPERINT + dev_no * 2);
         
     }
     /*not terminal */
     else
     {
+        saved_status = device_register->d_status;
         /*write ACK command code in device register, or write a new command*/
         device_register->d_command = ACK;
-
-        /*put status code in v0*/
-        curr_proc->p_s.s_v0 = device_register->d_status;
-
+        
          /*perform V on Nucleus maintain semaphore of this device. */
-        device_semAdd = device_sem[(interrupt_line - 3) * DEVPERINT + dev_no];
+        device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no];
     }
-   
         
     (*device_semAdd)++;
 
     /*unblock pcb that initiated this I/O op and requested to wait for completion via SYS5*/
     pcb_PTR unblocked_pcb = removeBlocked(device_semAdd);
-    softblock_cnt--;
-
+    
+    cpu_t quantum_end_time;
     /*if V returns NULL, return to curr_proc (if there's no curr_proc, Scheduler calls WAIT())*/
     if (unblocked_pcb == NULL)
     {
-        
-        LDST((state_t*) BIOSDATAPAGE); 
-        return;
+        if(curr_proc != NULL)
+        {
+            
+            /*STCK(quantum_end_time);
+            curr_proc->p_time += (quantum_end_time - quantum_start_time);*/
+            LDST((state_t*) BIOSDATAPAGE); 
+        }
+            
+        else 
+            scheduler();
     }
+
+    softblock_cnt--;
         
 
     /*place saved off status code into the new unblocked pcb's v0 reg*/
@@ -170,19 +168,28 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     perform LDST on saved exception state on BIOS Data Page (processor 0 excp state)*/
     /*increasePC();
     increasePC();*/
-    debug(1000,1000,device_register->t_transm_status,device_register->t_transm_command);
 
     if(curr_proc != NULL) /*interrupt occurred before WAIT*/
+    {
+        STCK(quantum_end_time);
+        curr_proc->p_time += (quantum_end_time - quantum_start_time);
         LDST((state_t*) BIOSDATAPAGE);  /*perform LDST manually here?*/
+    }
+        
     else
+    {
         scheduler();
+    }
+        
 }
 
 void PLTInterruptHandler()
 {
     /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
+    /*debug(46,46,46,46);*/
+    /*debug(curr_proc,49,49,49);*/
     setTIMER(0x7FFFFFFF);
-
+    debug(curr_proc,49,49,49);
     /*copy processor state (BIOS Data Page) into pcb's p_s */
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
 
@@ -193,16 +200,24 @@ void PLTInterruptHandler()
 
     /*Place the Current Process on the Ready Queue*/
     insertProcQ(&ready_queue, curr_proc);
+    
     scheduler();    /*call scheduler*/
 }
 
 void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
+    debug(48,48,48,48);
     LDIT(100000);
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
-    while (removeBlocked(&device_sem[PSEUDOCLK]) != NULL);
+    pcb_PTR p;
+    while ((p = removeBlocked(&device_sem[PSEUDOCLK])) != NULL)
+    {
+        insertProcQ(&ready_queue, p);
+        softblock_cnt--;
+    }
+        
 
     /*reset pseudo-clock semaphore to 0*/
     device_sem[PSEUDOCLK] = 0;

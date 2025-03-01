@@ -78,7 +78,6 @@ typedef unsigned int devregtr;
 #define NOLEAVES		4	/* number of leaves of p8 process tree */
 #define MAXSEM			20
 
-
 SEMAPHORE term_mut=1,	/* for mutual exclusion on terminal */
 		s[MAXSEM+1],	/* semaphore array */
 		testsem=0,		/* for a simple test */
@@ -123,15 +122,13 @@ void print(char *msg) {
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
 	SYSCALL(PASSERN, (int)&term_mut, 0, 0);			/* P(term_mut) */
-	debug(s, msg, 12, 12);
-
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		debug(25,25,25,25);
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
-		debug(26,26,26,26);	
 		if ((status & TERMSTATMASK) != RECVD)
+		{
 			PANIC();
+		}
 		s++;	
 	}
 	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);				/* V(term_mut) */
@@ -166,8 +163,7 @@ void debug(int param1, int param2, int param3, int param4)
 void test() {	
 	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
-	debug(69, ((state_t*) BIOSDATAPAGE)->s_cause, 69,69);
-	print("p1 v(testsem)\n");
+	/*print("p1 v(testsem)\n");*/
 
 	/* set up states of the other processes */
 
@@ -247,15 +243,17 @@ void test() {
 	gchild4state.s_pc = gchild4state.s_t9 = (memaddr)p8leaf;
 	gchild4state.s_status = gchild4state.s_status | IEPBITON | CAUSEINTMASK | TEBITON;
 	
+	debug(startp2,26,26,26);
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
-
+	
 	print("p2 was started\n");
 
+	debug(startp2,26,26,26);
 	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);								/* V(startp2)   */
-
+	debug(startp2, endp2,27,27);
 	SYSCALL(PASSERN, (int)&endp2, 0, 0);								/* P(endp2)     */
-
+	debug(35,36,37,38);
 	/* make sure we really blocked */
 	if (p1p2synch == 0)
 		print("error: p1/p2 synchronization bad\n");
@@ -310,10 +308,10 @@ void test() {
 
 /* p2 -- semaphore and cputime-SYS test process */
 void p2() {
+	
 	int		i;				/* just to waste time  */
 	cpu_t	now1,now2;		/* times of day        */
 	cpu_t	cpu_t1,cpu_t2;	/* cpu time used       */
-
 	SYSCALL(PASSERN, (int)&startp2, 0, 0);				/* P(startp2)   */
 
 	print("p2 starts\n");
@@ -325,11 +323,13 @@ void p2() {
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
 		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */
+		/*debug(3,3,s[i],3);*/
 		SYSCALL(PASSERN, (int)&s[i], 0, 0);			/* P(S[I]) */
+		/*debug(3,3,s[i],3);*/
 		if (s[i] != 0)
 			print("error: p2 bad v/p pairs\n");
 	}
-
+	debug(2,2,2,2);
 	print("p2 v's successfully\n");
 
 	/* test of SYS6 */
