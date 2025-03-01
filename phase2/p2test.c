@@ -262,7 +262,7 @@ void test() {
 	SYSCALL(CREATETHREAD, (int)&p3state, (int) NULL, 0);				/* start p3     */
 
 	print("p3 is started\n");
-
+	debug(7,7,7,7);
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
@@ -330,7 +330,7 @@ void p2() {
 		if (s[i] != 0)
 			print("error: p2 bad v/p pairs\n");
 	}
-	debug(2,2,2,2);
+	
 	print("p2 v's successfully\n");
 
 	/* test of SYS6 */
@@ -344,10 +344,13 @@ void p2() {
 
 	cpu_t2 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
 	STCK(now2);				/* time of day  */
-
+	
 	if (((now2 - now1) >= (cpu_t2 - cpu_t1)) &&
 			((cpu_t2 - cpu_t1) >= (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR)))))
-		print("p2 is OK\n");
+		{
+			print("p2 is OK\n");
+		}
+		
 	else  {
 		if ((now2 - now1) < (cpu_t2 - cpu_t1))
 			print ("error: more cpu time than real time\n");
@@ -358,8 +361,8 @@ void p2() {
 
 	p1p2synch = 1;				/* p1 will check this */
 
+	
 	SYSCALL(VERHOGEN, (int)&endp2, 0, 0);				/* V(endp2)     */
-
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p2 */
 
 	/* just did a SYS2, so should not get to this point */
@@ -376,7 +379,7 @@ void p3() {
 
 	time1 = 0;
 	time2 = 0;
-
+	
 	/* loop until we are delayed at least half of clock V interval */
 	while (time2-time1 < (CLOCKINTERVAL >> 1) )  {
 		STCK(time1);			/* time of day     */

@@ -205,7 +205,9 @@ condition); otherwise, return p
     if (headProcQ(*tp) == (*tp))
     /*edge case: process queue has one element */
     {
-        return removeProcQ(tp);
+        if((*tp) == p) /*head of tp is p, remove*/
+            return removeProcQ(tp);
+        return NULL;  /*p is not in tp, do nothing*/
     }
 
     /*check if p is in process queue*/

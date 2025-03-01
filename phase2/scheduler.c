@@ -9,6 +9,7 @@ void scheduler()
     /*Remove the pcb from the head of the Ready Queue and store the pointer to the pcb in the Current Process field*/
     
     curr_proc = removeProcQ(&ready_queue); 
+    debug(8000, process_cnt, softblock_cnt, curr_proc);
     /*ready queue empty*/
     if(curr_proc == NULL)
     {
@@ -25,9 +26,9 @@ void scheduler()
             /*setSTATUS(getSTATUS() | 0b00000000000000000000000000000001);*/ /*macro: INTRPTENABLED*/    /*enable interrupt*/
             /*setSTATUS(getSTATUS() & 0b11110111111111111111111111111111);*/ /*macro: PLTDISABLED*/   /*disable PLT*/
             /*curr_proc = NULL;*/
-            /*debug(18,18,18,getSTATUS());*/
-            unsigned int wait_status = getSTATUS() | IMON & TEBITOFF | IECBITON ;
-            setSTATUS(wait_status);
+                        
+            setSTATUS(IMON & TEBITOFF | IECBITON);
+            /*debug(18,18,process_cnt,softblock_cnt);*/
             /*debug(19,19,19,20);*/
             WAIT();   /*WAIT might not be executed if after IECBITON an interrupt arrives */
         }

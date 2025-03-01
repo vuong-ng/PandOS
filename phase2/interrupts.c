@@ -153,7 +153,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         else 
             scheduler();
     }
-
+    /*debug(71,71,71,softblock_cnt);*/
     softblock_cnt--;
         
 
@@ -180,6 +180,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     {
         scheduler();
     }
+    
         
 }
 
@@ -187,7 +188,7 @@ void PLTInterruptHandler()
 {
     /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
     /*debug(46,46,46,46);*/
-    /*debug(curr_proc,49,49,49);*/
+    /*debug(curr_proc,49,process_cnt,softblock_cnt);*/
     setTIMER(0x7FFFFFFF);
     /*debug(curr_proc,49,49,49);*/
     /*copy processor state (BIOS Data Page) into pcb's p_s */
@@ -212,8 +213,10 @@ void IntervalTimerInterruptHandler()
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
     pcb_PTR p;
+    debug(48,48,48,softblock_cnt);
     while ((p = removeBlocked(&device_sem[PSEUDOCLK])) != NULL)
     {
+        /*debug(95,95,95,95);*/
         insertProcQ(&ready_queue, p);
         softblock_cnt--;
     }

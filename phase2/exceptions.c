@@ -11,7 +11,6 @@ void fooBar()
     /*STST(&curr_proc->p_s);   (done by hardware, dont have to do)*/ /*store curr proc's state in BIOS Data Page right after exception raised (in 0x0FFFF000 ?)*/
     /*setCAUSE(curr_proc->p_s.s_cause); */  /*set Cause register*/
     fooBarCount++;
-    /*debug(10,10,10,10);*/
 
     unsigned int cause = ((state_t*) BIOSDATAPAGE)->s_cause; 
     unsigned int cause_original = ((state_t*) BIOSDATAPAGE)->s_cause;
@@ -80,7 +79,6 @@ void trapHandler()
 
 void syscallHandler()
 {
-    
 
     /*check user/kernel mode and call trap handler if necessary*/
     unsigned int status = 0; /*((state_t*) BIOSDATAPAGE)->s_status;*/
@@ -95,7 +93,6 @@ void syscallHandler()
         
     int a0 = ((state_t*) BIOSDATAPAGE)->s_a0;
     cpu_t quantum_end_time;
-
     switch (a0)
     {
     /*Create Process (SYS1)*/
@@ -149,26 +146,33 @@ void syscallHandler()
     /*Terminate Process (SYS2)*/
     case TERMINATETHREAD:
     {
+
         /*step 1: remove the process and all its descendants*/
         terminateProc(curr_proc->p_child);
         outChild(curr_proc);
+
         outProcQ(&ready_queue, curr_proc);
 
+
+        
+        
         /*step 2: if terminated_proc blocked on sem, increment its sem
                   however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
         /*blocked */
         if (curr_proc->p_semAdd != NULL)
         {
+            
             /*sem is not device sem*/
             if(!(isDeviceSem(curr_proc->p_semAdd)))
                 (*curr_proc->p_semAdd)++;
             softblock_cnt--;
         }
+        
         freePcb(curr_proc);
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
-
+        debug(curr_proc,52,process_cnt,softblock_cnt);
         /*curr_proc terminated, call scheduler to schedule new pcb*/        
         scheduler();
         break;
@@ -188,7 +192,7 @@ void syscallHandler()
         if (*(semAdd) >= 0)
         {
             /*debug(333,333,333,333);*/
-            insertProcQ(&ready_queue, removeBlocked(semAdd)); /*safety measures*/
+            /*insertProcQ(&ready_queue, removeBlocked(semAdd));*/ /*safety measures*/
             
             increasePC();
             /*free sem back to semdFree list*/
@@ -201,7 +205,7 @@ void syscallHandler()
         /*else: process blocked on ASL, call Scheduler*/
         else
         {
-            /*debug(9998,9998,9998,9998);*/
+            debug(9998,9998,9998,9998);
             increasePC();   
             copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
             
@@ -238,8 +242,9 @@ void syscallHandler()
         
         if (*(semAdd) <= 0)
         {
-            /*debug(9999,9999,9999,9999);*/
+            
             pcb_PTR removed = removeBlocked(semAdd);
+            debug(9999,9999,removed,softblock_cnt);
             insertProcQ(&ready_queue, removed);
             if(removed != NULL)
                 softblock_cnt--;
@@ -273,7 +278,6 @@ void syscallHandler()
         }
         else
         {
-            
             device_semAdd = &(device_sem[(interrupt_line - 3) * DEVPERINT + device_number * 2 + terminal_read]);
         }
             
@@ -293,8 +297,10 @@ void syscallHandler()
         curr_proc->p_time += (quantum_end_time - quantum_start_time);
 
         /*(always) block the Current Process on the ASL, call scheduler*/
-        int insert_successful = insertBlocked(device_semAdd, curr_proc);
-        softblock_cnt++;
+        if(!insertBlocked(device_semAdd, curr_proc))
+            softblock_cnt++;
+        else
+            PANIC();
         /*debug(terminal_read,process_cnt,softblock_cnt,5);*/
         scheduler();
 
@@ -306,7 +312,7 @@ void syscallHandler()
     {
         /*step 1: put current proc's p_time in v0 of saved exception state + used quantum*/
         STCK(quantum_end_time);
-        ((state_t*) BIOSDATAPAGE)->s_v0 += (quantum_end_time - quantum_start_time); 
+        ((state_t*) BIOSDATAPAGE)->s_v0 = curr_proc->p_time + (quantum_end_time - quantum_start_time); 
 
         /*return control to current process*/
         increasePC();
@@ -337,6 +343,7 @@ void syscallHandler()
         curr_proc->p_time += (quantum_end_time - quantum_start_time);
         insertBlocked(pseudo_clk_semAdd, curr_proc);
         softblock_cnt++;
+        
         
         scheduler();
         /*step 2: performs V (increase) every 100 millisecond on pseudo-clock sem*/
@@ -369,6 +376,7 @@ void syscallHandler()
 
 void passUp(int passup_type)
 {
+    /*debug(9997,9997,9997,softblock_cnt);*/
     if(curr_proc->p_supportStruct == NULL)
     {
 
