@@ -17,11 +17,11 @@ int main()
 {
     /*Initialize Pass Up Vector*/
 
-    passupvector_t* passupvec = PASSUPVECTOR;
+    passupvector_t* passupvec = (passupvector_t*) PASSUPVECTOR;
     passupvec->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
-    passupvec->tlb_refll_stackPtr = 0x20001000;
+    passupvec->tlb_refll_stackPtr = (memaddr) 0x20001000;
     passupvec->execption_handler =(memaddr) fooBar;
-    passupvec->exception_stackPtr = 0x20001000;
+    passupvec->exception_stackPtr = (memaddr) 0x20001000;
 
 
     /*Initialize Level 2 variables*/

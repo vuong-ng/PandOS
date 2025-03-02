@@ -33,7 +33,7 @@ HIDDEN void traverseToAddress(int* semdAdd, semd_t **prev, semd_t **curr){
     *curr = semd_h->s_next;
     *prev = semd_h;
 
-    while((*curr)->s_semAdd < MAXINT && (*curr)->s_semAdd != (semdAdd)){
+    while((*curr)->s_semAdd < (int*) MAXINT && (*curr)->s_semAdd != (semdAdd)){
         (*prev) = (*curr);
         (*curr) = (*curr)->s_next;
     }
@@ -81,16 +81,9 @@ void initASL()
     dummy_tail->s_next = NULL;
 
     /*assign address for head and tail dummy node*/
-    semd_h->s_semAdd = ZERO;
-    dummy_tail->s_semAdd = MAXINT;
+    semd_h->s_semAdd = (int*) ZERO;
+    dummy_tail->s_semAdd = (int*) MAXINT;
 };
-
-void deb(int p1, int p2, int p3, int p4)
-{
-    int a = 1;
-    int b = a - 1;
-    int c = a+b;
-}
 
 /*
  * Function:  insertBlocked
@@ -111,7 +104,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
     traverseToAddress(semAdd, &prevSemd, &currSemd);    /*find semaphore with semAdd physical address*/
     
     
-    if (currSemd->s_semAdd != MAXINT) {          /*found semaphore with semAdd*/
+    if (currSemd->s_semAdd != (int*) MAXINT) {          /*found semaphore with semAdd*/
         /*add p to procQ of that semaphore*/
         insertProcQ(&(currSemd->s_procQ), p); 
         
@@ -139,10 +132,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
             prevSemd->s_next = freeSemd;
         }
     }
-    if(p != NULL)
-        p->p_semAdd = semAdd; /*set p's semaphore address to semAdd */
-   
-    deb(1,0,1,7);
+    p->p_semAdd = semAdd; /*set p's semaphore address to semAdd */
     return FALSE;
 };
 
@@ -164,7 +154,7 @@ pcb_PTR removeBlocked (int *semAdd){
     traverseToAddress(semAdd, &prevSemd, &currSemd);   /*find semaphore with semAdd physical address*/
 
     /*if semdAdd not found, return NULL*/
-    if (currSemd->s_semAdd == MAXINT)
+    if (currSemd->s_semAdd == (int*) MAXINT)
         return NULL;
     
     /*remove first pcb*/
@@ -204,7 +194,7 @@ pcb_PTR headBlocked (int *semAdd){
     traverseToAddress(semAdd, &prevSemd, &currSemd); /*find semaphore with semAdd physical address*/
 
     /*if semAdd not in ASL*/
-    if (currSemd->s_semAdd == MAXINT)
+    if (currSemd->s_semAdd == (int*) MAXINT)
         return NULL;
     return headProcQ(currSemd->s_procQ);
 }
@@ -222,12 +212,13 @@ pcb_PTR headBlocked (int *semAdd){
  *           returns NULL if there no semaphore with such address in the ASL
  */
 pcb_PTR outBlocked(pcb_PTR p){
+
     semd_t* prevSemd = NULL;
     semd_t* currSemd = NULL;
     traverseToAddress(p->p_semAdd, &prevSemd, &currSemd); /*find semaphore with semAdd physical address*/
 
     /*return NULL if semAdd not found*/
-    if (currSemd->s_semAdd == MAXINT)
+    if (currSemd->s_semAdd == (int*) MAXINT)
         return NULL;
 
     /*return pointer to the process p pointed to by p in the semaphore*/

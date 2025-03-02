@@ -8,15 +8,10 @@
 
 void interruptHandler(unsigned int cause)
 {
-    /*debug(10,10,10,10);*/
     /*step 1: determine highest priority pending interrupt*/
     int IP = cause;
 
-    /*Interrupt Line 0*/
-    /*if ((IP >> INTERPROCINT + GETINTLINE) & CLEAR31MSB == ON)
-    {
-
-    }*/
+    /*Interrupt Line 0 skipped for uniprocessor*/
     /*Interrupt Line 1*/
     if ((IP >> PLTINT + GETINTLINE) & CLEAR31MSB == ON)
         PLTInterruptHandler();
@@ -76,8 +71,6 @@ int getPendingDevice(int* interrupt_line_address)
 
 void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 {
-    
-
     /*calculate address for this device's dev register*/
     /*
     Given an interrupt line (IntLineNo) and a device number (DevNo) one can
@@ -86,10 +79,8 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     */
     device_t* device_register= 0x10000054 + (interrupt_line - 3) * 0x80 + dev_no * 0x10;
     
-
     /*save off status code from device register*/
     unsigned int saved_status;
-    /*debug(saved_status, 1006,1006,1006);*/
     int* device_semAdd;
 
     if(interrupt_line == TERMINT)
@@ -144,7 +135,6 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     {
         if(curr_proc != NULL)
         {
-            
             /*STCK(quantum_end_time);
             curr_proc->p_time += (quantum_end_time - quantum_start_time);*/
             LDST((state_t*) BIOSDATAPAGE); 
@@ -153,44 +143,36 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         else 
             scheduler();
     }
-    /*debug(71,71,71,softblock_cnt);*/
     softblock_cnt--;
         
-
     /*place saved off status code into the new unblocked pcb's v0 reg*/
     unblocked_pcb->p_s.s_v0 = saved_status;
 
     /*insert the new unblocked pcb to readyQueue*/
     insertProcQ(&ready_queue, unblocked_pcb);
 
-
-    /*return to curr_proc (if there's no curr_proc, Scheduler calls WAIT()), 
+    /*return to curr_proc  
     perform LDST on saved exception state on BIOS Data Page (processor 0 excp state)*/
-    /*increasePC();
-    increasePC();*/
 
     if(curr_proc != NULL) /*interrupt occurred before WAIT*/
     {
         STCK(quantum_end_time);
         curr_proc->p_time += (quantum_end_time - quantum_start_time);
-        LDST((state_t*) BIOSDATAPAGE);  /*perform LDST manually here?*/
+        LDST((state_t*) BIOSDATAPAGE); 
     }
-        
+    /*if there's no curr_proc, Scheduler calls WAIT()*/
     else
     {
         scheduler();
     }
     
-        
 }
 
 void PLTInterruptHandler()
 {
     /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
-    /*debug(46,46,46,46);*/
-    /*debug(curr_proc,49,process_cnt,softblock_cnt);*/
     setTIMER(0x7FFFFFFF);
-    /*debug(curr_proc,49,49,49);*/
+
     /*copy processor state (BIOS Data Page) into pcb's p_s */
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
 
@@ -198,7 +180,6 @@ void PLTInterruptHandler()
     cpu_t quantum_end_time;
     STCK(quantum_end_time);
     curr_proc->p_time += (quantum_end_time - quantum_start_time);
-    /*debug(quantum_end_time-quantum_start_time, quantum_end_time, quantum_start_time,0);*/
 
     /*Place the Current Process on the Ready Queue*/
     insertProcQ(&ready_queue, curr_proc);
@@ -209,31 +190,24 @@ void PLTInterruptHandler()
 void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
-    /*debug(48,48,48,48);*/
 
     LDIT(100000);
-    
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
     pcb_PTR p;
-    /*debug(48,48,48,softblock_cnt);*/
     while ((p = removeBlocked(&device_sem[PSEUDOCLK])) != NULL)
     {
-        /*debug(95,95,95,95);*/
         insertProcQ(&ready_queue, p);
         softblock_cnt--;
     }
-    
 
     /*reset pseudo-clock semaphore to 0*/
     device_sem[PSEUDOCLK] = 0;
-    /*debug(curr_proc, 4848, softblock_cnt, 4848);*/
+
     /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)
     call scheduler if there's no current process to return to*/
     if(curr_proc != NULL)
     {
-        /*debug(4848,curr_proc,4848,4848);*/
-
         LDST((state_t*) BIOSDATAPAGE);
     }
         

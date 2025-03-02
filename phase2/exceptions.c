@@ -5,18 +5,11 @@
 #include "../h/pcb.h"
 #include "../h/asl.h"
 
-static fooBarCount = 0;
 void fooBar()
 {
-    /*STST(&curr_proc->p_s);   (done by hardware, dont have to do)*/ /*store curr proc's state in BIOS Data Page right after exception raised (in 0x0FFFF000 ?)*/
-    /*setCAUSE(curr_proc->p_s.s_cause); */  /*set Cause register*/
-    fooBarCount++;
-
     unsigned int cause = ((state_t*) BIOSDATAPAGE)->s_cause; 
     unsigned int cause_original = ((state_t*) BIOSDATAPAGE)->s_cause;
 
-    /*debug(fooBarCount, cause, 20,20);*/
-    
     /*4-way branch, all traps get same handler*/
     switch ((cause >> 2) & 0b00000000000000000000000000011111)
     {
@@ -51,7 +44,6 @@ void fooBar()
     case 11:
     case 12:
     {
-        /*debug(process_cnt,5,5,5);*/
         trapHandler();
         break; 
     }
@@ -98,12 +90,11 @@ void syscallHandler()
     /*Create Process (SYS1)*/
     case CREATETHREAD:
     {
-        /*debug(123,123,123,123);*/
         /*initialize state of new process based on current process's state ( = processor state??) saved in a1 */
         state_t* a1 = ((state_t*) BIOSDATAPAGE)->s_a1;
         support_t* a2 = ((state_t*) BIOSDATAPAGE)->s_a2;
         pcb_PTR new_proc = allocPcb();
-        /*debug(123,123,123,123);*/
+
         /* new_proc == NULL -> insufficient resources, put err code -1 in v0*/
         if (new_proc == NULL)
         {
@@ -113,26 +104,19 @@ void syscallHandler()
         }
         else 
             curr_proc->p_s.s_v0 = 0;
-        /*debug(123,123,123,123);*/
 
         /*step 1: p_s from a1*/
         copyState(&(new_proc->p_s), a1);
-        /*debug(123,123,123,123);*/
         
         /*step 2: p_supportStruct from a2*/
         if(a2 != NULL)
-        {
-            support_t new_sptr;
-            new_proc->p_supportStruct = &new_sptr;
-            copySupport(new_proc->p_supportStruct, a2);
-        }
+            new_proc->p_supportStruct = a2;
             
 
-        /*debug(123,123,ready_queue,curr_proc);*/
         /*step 3: place newProc on readyQueue */
         insertProcQ(&ready_queue, new_proc);
         process_cnt++; /* increment process count*/
-        /*debug(curr_proc,123,ready_queue,123);*/
+
         /*step 4:make it a child of current process*/
         insertChild(curr_proc, new_proc);
 
@@ -153,33 +137,32 @@ void syscallHandler()
     /*Terminate Process (SYS2)*/
     case TERMINATETHREAD:
     {
-        /*debug(222,ready_queue, ready_queue->p_next, curr_proc);*/
         /*step 1: remove the process and all its descendants*/
-        terminateProc(curr_proc->p_child);
-        outChild(curr_proc);
-
-        outProcQ(&ready_queue, curr_proc);
-
-        /*debug(ready_queue, curr_proc,ready_queue->p_next,222);*/
-        
+        terminateProc(curr_proc->p_child);        
         
         /*step 2: if terminated_proc blocked on sem, increment its sem
                   however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
         /*blocked */
         if (curr_proc->p_semAdd != NULL)
         {
-            
             /*sem is not device sem*/
             if(!(isDeviceSem(curr_proc->p_semAdd)))
+            {
+                outBlocked(curr_proc);
                 (*curr_proc->p_semAdd)++;
-            softblock_cnt--;
+                softblock_cnt--;
+            }
         }
-        
+        else
+        {
+            outProcQ(&ready_queue, curr_proc);
+        }
+
+        outChild(curr_proc);
         freePcb(curr_proc);
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
-        /*debug(curr_proc,52,process_cnt,softblock_cnt);*/
         /*curr_proc terminated, call scheduler to schedule new pcb*/        
         scheduler();
         break;
@@ -198,12 +181,9 @@ void syscallHandler()
         /*if sem >= 0 -> running (not blocked), return control to current process*/
         if (*(semAdd) >= 0)
         {
-            /*debug(333,333,333,333);*/
             /*insertProcQ(&ready_queue, removeBlocked(semAdd));*/ /*safety measures*/
-            
+
             increasePC();
-            /*free sem back to semdFree list*/
-            /**/
             
             LDST((state_t*) BIOSDATAPAGE);
         }
@@ -219,24 +199,18 @@ void syscallHandler()
             /*(blocking) Update the accumulated CPU time for the Current Process*/
             STCK(quantum_end_time);
             curr_proc->p_time += (quantum_end_time - quantum_start_time);
-            
-            /*debug(9998, process_cnt, softblock_cnt, curr_proc);*/
-            /*debug(9998, semAdd, curr_proc,9998);*/
+
             if(insertBlocked(semAdd, curr_proc) == FALSE)  /*blocked successfully*/
             {
-                /*debug(ready_queue, curr_proc, 9998,9998);*/
                 softblock_cnt++;
                 scheduler();
                 
             }
-            else /*can't block, return to curr*/
-                /*LDST((state_t*) BIOSDATAPAGE);*/
+            else /*can't block due to lack of resources*/
             {
-                /*debug(9998,0,9998,0);*/
                 PANIC();
             }
                 
-            /*debug(39,40,41,42);*/
             scheduler();
         }
         break;
@@ -246,7 +220,6 @@ void syscallHandler()
     case VERHOGEN:
     /*V: increase value of semaphore, if there's sleeping process (semaphore <= 0), wake it up*/
     {
-        /*debug(process_cnt,((state_t*) BIOSDATAPAGE)->s_a2,4,4);*/
 
         int* semAdd = ((state_t*) BIOSDATAPAGE)->s_a1;
 
@@ -256,7 +229,6 @@ void syscallHandler()
         {
             
             pcb_PTR removed = removeBlocked(semAdd);
-            /*debug(9999,9999,removed,softblock_cnt);*/
             insertProcQ(&ready_queue, removed);
             if(removed != NULL)
                 softblock_cnt--;
@@ -282,7 +254,7 @@ void syscallHandler()
         int terminal_read = curr_proc->p_s.s_a3;
         int* device_semAdd;
 
-        /*not terminal (HANDLED LATER)*/
+        /*not terminal */
         if(interrupt_line != TERMINT)
         {
             device_semAdd = &(device_sem[(interrupt_line - 3) * DEVPERINT + device_number]);
@@ -312,7 +284,6 @@ void syscallHandler()
             softblock_cnt++;
         else
             PANIC();
-        /*debug(terminal_read,process_cnt,softblock_cnt,5);*/
         scheduler();
 
         break;
@@ -335,15 +306,14 @@ void syscallHandler()
     case WAITCLOCK:
     {
         /*copy processor state into curr proc state*/
-        /*copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);*/
+        copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
 
         /*step 1: performs P on pseudo-clock sem*/
 
         int* pseudo_clk_semAdd = &device_sem[PSEUDOCLK];
         (*pseudo_clk_semAdd)--;
 
-
-        /*step 3: block current process in ASL, then call Scheduler*/
+        /*step 2: block current process in ASL, then call Scheduler*/
 
         increasePC();
         copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
@@ -358,10 +328,6 @@ void syscallHandler()
         else 
             PANIC();
         
-        
-        
-        /*step 2: performs V (increase) every 100 millisecond on pseudo-clock sem*/
-
         break;
     }
         
@@ -369,7 +335,7 @@ void syscallHandler()
     case GETSPTPTR:
     {
         /*step 1: return p_supportStruct if exists, otherwise NULL*/
-        ((state_t*) BIOSDATAPAGE)->s_a2 = curr_proc->p_supportStruct;       /*or return in v0*/
+        ((state_t*) BIOSDATAPAGE)->s_v0 = curr_proc->p_supportStruct;      
 
         /*return control to current process*/
         increasePC();
@@ -390,14 +356,13 @@ void syscallHandler()
 
 void passUp(int passup_type)
 {
-    /*debug(9997,9997,9997,softblock_cnt);*/
+
     if(curr_proc->p_supportStruct == NULL)
     {
 
         /*step 1: remove the process and all its descendants*/
         terminateProc(curr_proc->p_child);
-        outChild(curr_proc);
-
+        
         /*step 2: if terminated_proc blocked on sem, increment its sem
                   however if blocked on DEVICE sem, dont adjust sem ? (is device_sem an asl)*/
         /*blocked */
@@ -405,9 +370,17 @@ void passUp(int passup_type)
         {
             /*sem is not device sem*/
             if(!(isDeviceSem(curr_proc->p_semAdd)))
+            {
+                outBlocked(curr_proc);
                 (*curr_proc->p_semAdd)++;
-            softblock_cnt--;
+                softblock_cnt--;
+            }
+
         }
+        else    
+            outProcQ(&ready_queue, curr_proc);
+
+        outChild(curr_proc);
         freePcb(curr_proc);
 
         /*step 3: adjust proc count and soft-blocked cnt*/
@@ -419,11 +392,8 @@ void passUp(int passup_type)
         
     else
     {
-        /*debug(15,17,19,21);*/
         /*copy saved exception state from BIOS Data Page to correct sup_exceptState of curr_proc*/
         state_t* sup_exceptState_p = &(curr_proc->p_supportStruct->sup_exceptState[passup_type]);
-
-
         copyState(sup_exceptState_p, (state_t*) BIOSDATAPAGE);
 
         /*perform LDCXT using field from correct sup_exceptContext field of curr_proc*/
@@ -431,8 +401,6 @@ void passUp(int passup_type)
         LDCXT(sup_exceptContext_p->c_stackPtr, sup_exceptContext_p->c_status, sup_exceptContext_p->c_pc);
     }
 }
-
-
 
 
 /*HELPER FUNCTIONS*/
@@ -452,7 +420,7 @@ int isDeviceSem(int* semAdd)
     return found;
 }
 
-/*copy src to dest*/
+/*copy src state to dest state*/
 void copyState(state_t* dest, state_t* src)
 {
     dest->s_entryHI = src->s_entryHI;
@@ -460,36 +428,12 @@ void copyState(state_t* dest, state_t* src)
     dest->s_status  = src->s_status;
     dest->s_pc      = src->s_pc;
     int i;
-    debug(1,1,1,1);
 
-    for(i = 0; i < 22; i++)
-        dest->s_reg[i] = src->s_reg[i];
-
-    dest->s_reg[22] = src->s_reg[22];   /*something fishy going on...*/
-
-    for (i = 23; i < STATEREGNUM; i++)
+    for (i = 0; i < STATEREGNUM; i++)
     {
         dest->s_reg[i] = src->s_reg[i];
     }
-        
-}
-
-void copySupport(support_t* dest, support_t* src)
-{
-    /*debug(357,357,357,357);
-    debug(dest,src,357,357);
-    debug(dest->sup_asid, src->sup_asid, 357, 357);*/
-    dest->sup_asid = src->sup_asid;
-    copyState(&(dest->sup_exceptState[0]), &(src->sup_exceptState[0]));
-    copyState(&(dest->sup_exceptState[1]), &(src->sup_exceptState[1]));
-
-    dest->sup_exceptContext[0].c_pc = src->sup_exceptContext[0].c_pc;
-    dest->sup_exceptContext[0].c_stackPtr = src->sup_exceptContext[0].c_stackPtr;
-    dest->sup_exceptContext[0].c_status = src->sup_exceptContext[0].c_status;
-
-    dest->sup_exceptContext[1].c_pc = src->sup_exceptContext[1].c_pc;
-    dest->sup_exceptContext[1].c_stackPtr = src->sup_exceptContext[1].c_stackPtr;
-    dest->sup_exceptContext[1].c_status = src->sup_exceptContext[1].c_status;
+    return;
 }
 
 /*sys3, sys5, sys7 (blocking syscalls) function: 
@@ -513,22 +457,31 @@ void terminateProc(pcb_PTR proc)
 {
     if (proc == NULL)
         return;
+    if(proc->p_child != NULL)
+        terminateProc(proc->p_child);
+    if(proc->p_sib != NULL)
+        terminateProc(proc->p_sib);
 
     /*blocked */
     if (proc->p_semAdd != NULL)
     {
         /*sem is not device sem*/
         if(!(isDeviceSem(proc->p_semAdd)))
-            *(proc->p_semAdd)++;
-        softblock_cnt--;
+        {
+            (*proc->p_semAdd)++;
+            /*removeBlocked first (actually have to outBlocked)*/
+            outBlocked(proc);
+            softblock_cnt--;
+               
+        }
     }
+    else    
+        outProcQ(&ready_queue, proc);
+
+    
     process_cnt--;
 
-    terminateProc(proc->p_sib);
-    terminateProc(proc->p_child);
-
     outChild(proc);
-    outProcQ(&ready_queue, proc);
     freePcb(proc);
     return;
 }
