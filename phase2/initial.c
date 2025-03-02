@@ -76,6 +76,5 @@ int main()
     scheduler();
 
     /*do nothing here, scheduler never returns*/ 
-    return 0;
 
 }

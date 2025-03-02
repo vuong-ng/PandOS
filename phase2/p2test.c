@@ -164,7 +164,7 @@ void debug(int param1, int param2, int param3, int param4)
 void test() {	
 	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
-	print("p1 v(testsem)\n");
+	/*print("p1 v(testsem)\n");*/
 
 	/* set up states of the other processes */
 
@@ -244,42 +244,37 @@ void test() {
 	gchild4state.s_pc = gchild4state.s_t9 = (memaddr)p8leaf;
 	gchild4state.s_status = gchild4state.s_status | IEPBITON | CAUSEINTMASK | TEBITON;
 	
-	debug(startp2,26,26,26);
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
 	
-	print("p2 was started\n");
+	/*print("p2 was started\n");*/
 
-	debug(startp2,26,26,26);
 	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);								/* V(startp2)   */
-	debug(startp2, endp2,27,27);
 	SYSCALL(PASSERN, (int)&endp2, 0, 0);								/* P(endp2)     */
-	debug(35,36,37,38);
 	/* make sure we really blocked */
 	if (p1p2synch == 0)
 		print("error: p1/p2 synchronization bad\n");
 
 	SYSCALL(CREATETHREAD, (int)&p3state, (int) NULL, 0);				/* start p3     */
-
-	print("p3 is started\n");
-	debug(7,7,7,7);
+	
+	/*print("p3 is started\n");*/
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
-
+	debug(6,6,6,6);
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_pc =  (memaddr) p5gen;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = p5Stack;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
-	
+	debug(10,10,10,10);
 	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
-
+	debug(7,7,7,7);
 	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
-
+	debug(8,8,8,8);
 	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
-
+	debug(9,9,9,9);
 	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
 
 	print("p1 knows p5 ended\n");
@@ -315,7 +310,7 @@ void p2() {
 	cpu_t	cpu_t1,cpu_t2;	/* cpu time used       */
 	SYSCALL(PASSERN, (int)&startp2, 0, 0);				/* P(startp2)   */
 
-	print("p2 starts\n");
+	/*print("p2 starts\n");*/
 
 	/* initialize all semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)
@@ -331,7 +326,7 @@ void p2() {
 			print("error: p2 bad v/p pairs\n");
 	}
 	
-	print("p2 v's successfully\n");
+	/*print("p2 v's successfully\n");*/
 
 	/* test of SYS6 */
 
@@ -373,6 +368,7 @@ void p2() {
 
 /* p3 -- clock semaphore test process */
 void p3() {
+	debug(33,33,33,333);
 	cpu_t	time1, time2;
 	cpu_t	cpu_t1,cpu_t2;		/* cpu time used       */
 	int		i;
@@ -384,10 +380,12 @@ void p3() {
 	while (time2-time1 < (CLOCKINTERVAL >> 1) )  {
 		STCK(time1);			/* time of day     */
 		SYSCALL(WAITCLOCK, 0, 0, 0);
+		/*debug(44,44,44,444);*/
 		STCK(time2);			/* new time of day */
+		debug(time2, time1, time2 - time1, CLOCKINTERVAL >> 1);
 	}
 
-	print("p3 - WAITCLOCK OK\n");
+	/*print("p3 - WAITCLOCK OK\n");*/
 
 	/* now let's check to see if we're really charge for CPU
 	   time correctly */
@@ -401,11 +399,12 @@ void p3() {
 	if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (* ((cpu_t *) TIMESCALEADDR))))
 		print("error: p3 - CPU time incorrectly maintained\n");
 	else
-		print("p3 - CPU time correctly maintained\n");
+		/*print("p3 - CPU time correctly maintained\n")*/;
 
 
 	SYSCALL(VERHOGEN, (int)&endp3, 0, 0);				/* V(endp3)        */
-
+	debug(3,3,333,3);
+	/*should have 2 procs in ready queue now*/
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p3    */
 
 	/* just did a SYS2, so should not get to this point */

@@ -13,12 +13,12 @@ void interruptHandler(unsigned int cause)
     int IP = cause;
 
     /*Interrupt Line 0*/
-    if ((IP >> INTERPROCINT + GETINTLINE) & CLEAR31MSB == ON)
+    /*if ((IP >> INTERPROCINT + GETINTLINE) & CLEAR31MSB == ON)
     {
 
-    }
+    }*/
     /*Interrupt Line 1*/
-    else if ((IP >> PLTINT + GETINTLINE) & CLEAR31MSB == ON)
+    if ((IP >> PLTINT + GETINTLINE) & CLEAR31MSB == ON)
         PLTInterruptHandler();
     /*Interrupt Line 2*/
     else if ((IP >> INTERVALTMRINT + GETINTLINE) & CLEAR31MSB == ON)
@@ -108,7 +108,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         if(device_register->t_transm_status & 0x000000FF != READY)
         {
             saved_status = device_register->t_transm_status;
-            device_register->t_transm_command = (device_register->t_transm_command) & 0xFFFFFF00 | ACK; /*set transmit command to ACK, which sets TRANSM_STATUS to READY/CHAR TRANSMITTED*/
+            device_register->t_transm_command = ACK; /*set transmit command to ACK, which sets TRANSM_STATUS to READY/CHAR TRANSMITTED*/
             
             device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 0];
         }
@@ -117,7 +117,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         {
             saved_status = device_register->t_recv_status;
 
-            device_register->t_recv_command = device_register->t_recv_command & 0xFFFFFF00 | ACK; /*set receive command to ACK*/
+            device_register->t_recv_command = ACK; /*set receive command to ACK*/
             device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * 2 + 1];
         }
         
@@ -188,7 +188,7 @@ void PLTInterruptHandler()
 {
     /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
     /*debug(46,46,46,46);*/
-    /*debug(curr_proc,49,process_cnt,softblock_cnt);*/
+    debug(curr_proc,49,process_cnt,softblock_cnt);
     setTIMER(0x7FFFFFFF);
     /*debug(curr_proc,49,49,49);*/
     /*copy processor state (BIOS Data Page) into pcb's p_s */
@@ -198,6 +198,7 @@ void PLTInterruptHandler()
     cpu_t quantum_end_time;
     STCK(quantum_end_time);
     curr_proc->p_time += (quantum_end_time - quantum_start_time);
+    debug(quantum_end_time-quantum_start_time, quantum_end_time, quantum_start_time,0);
 
     /*Place the Current Process on the Ready Queue*/
     insertProcQ(&ready_queue, curr_proc);
@@ -208,8 +209,10 @@ void PLTInterruptHandler()
 void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
-    /*debug(48,48,48,48);*/
+    debug(48,48,48,48);
+
     LDIT(100000);
+    
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
     pcb_PTR p;
@@ -220,12 +223,21 @@ void IntervalTimerInterruptHandler()
         insertProcQ(&ready_queue, p);
         softblock_cnt--;
     }
-        
+    
 
     /*reset pseudo-clock semaphore to 0*/
     device_sem[PSEUDOCLK] = 0;
+    debug(curr_proc, 4848, softblock_cnt, 4848);
+    /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)
+    call scheduler if there's no current process to return to*/
+    if(curr_proc != NULL)
+    {
+        debug(4848,curr_proc,4848,4848);
 
-    /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)*/
-    LDST((state_t*) BIOSDATAPAGE);
+        LDST((state_t*) BIOSDATAPAGE);
+    }
+        
+    else
+        scheduler();
 } 
 
