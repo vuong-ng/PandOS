@@ -117,7 +117,7 @@ void syscallHandler()
 
         /*step 1: p_s from a1*/
         copyState(&(new_proc->p_s), a1);
-        debug(123,123,123,123);
+        /*debug(123,123,123,123);*/
         
         /*step 2: p_supportStruct from a2*/
         if(a2 != NULL)
@@ -128,11 +128,11 @@ void syscallHandler()
         }
             
 
-        debug(123,123,ready_queue,curr_proc);
+        /*debug(123,123,ready_queue,curr_proc);*/
         /*step 3: place newProc on readyQueue */
         insertProcQ(&ready_queue, new_proc);
         process_cnt++; /* increment process count*/
-        debug(curr_proc,123,ready_queue,123);
+        /*debug(curr_proc,123,ready_queue,123);*/
         /*step 4:make it a child of current process*/
         insertChild(curr_proc, new_proc);
 
@@ -153,14 +153,14 @@ void syscallHandler()
     /*Terminate Process (SYS2)*/
     case TERMINATETHREAD:
     {
-        debug(222,ready_queue, ready_queue->p_next, curr_proc);
+        /*debug(222,ready_queue, ready_queue->p_next, curr_proc);*/
         /*step 1: remove the process and all its descendants*/
         terminateProc(curr_proc->p_child);
         outChild(curr_proc);
 
         outProcQ(&ready_queue, curr_proc);
 
-        debug(ready_queue, curr_proc,ready_queue->p_next,222);
+        /*debug(ready_queue, curr_proc,ready_queue->p_next,222);*/
         
         
         /*step 2: if terminated_proc blocked on sem, increment its sem
@@ -179,7 +179,7 @@ void syscallHandler()
 
         /*step 3: adjust proc count and soft-blocked cnt*/
         process_cnt--;
-        debug(curr_proc,52,process_cnt,softblock_cnt);
+        /*debug(curr_proc,52,process_cnt,softblock_cnt);*/
         /*curr_proc terminated, call scheduler to schedule new pcb*/        
         scheduler();
         break;
@@ -221,10 +221,10 @@ void syscallHandler()
             curr_proc->p_time += (quantum_end_time - quantum_start_time);
             
             /*debug(9998, process_cnt, softblock_cnt, curr_proc);*/
-            debug(9998, semAdd, curr_proc,9998);
+            /*debug(9998, semAdd, curr_proc,9998);*/
             if(insertBlocked(semAdd, curr_proc) == FALSE)  /*blocked successfully*/
             {
-                debug(ready_queue, curr_proc, 9998,9998);
+                /*debug(ready_queue, curr_proc, 9998,9998);*/
                 softblock_cnt++;
                 scheduler();
                 
@@ -232,7 +232,7 @@ void syscallHandler()
             else /*can't block, return to curr*/
                 /*LDST((state_t*) BIOSDATAPAGE);*/
             {
-                debug(9998,0,9998,0);
+                /*debug(9998,0,9998,0);*/
                 PANIC();
             }
                 
@@ -256,7 +256,7 @@ void syscallHandler()
         {
             
             pcb_PTR removed = removeBlocked(semAdd);
-            debug(9999,9999,removed,softblock_cnt);
+            /*debug(9999,9999,removed,softblock_cnt);*/
             insertProcQ(&ready_queue, removed);
             if(removed != NULL)
                 softblock_cnt--;
@@ -369,7 +369,7 @@ void syscallHandler()
     case GETSPTPTR:
     {
         /*step 1: return p_supportStruct if exists, otherwise NULL*/
-        ((state_t*) BIOSDATAPAGE)->s_a2 = curr_proc->p_supportStruct;
+        ((state_t*) BIOSDATAPAGE)->s_a2 = curr_proc->p_supportStruct;       /*or return in v0*/
 
         /*return control to current process*/
         increasePC();
@@ -419,22 +419,16 @@ void passUp(int passup_type)
         
     else
     {
-        debug(15,17,19,21);
+        /*debug(15,17,19,21);*/
         /*copy saved exception state from BIOS Data Page to correct sup_exceptState of curr_proc*/
-        debug(15,17,curr_proc->p_supportStruct,passup_type);
         state_t* sup_exceptState_p = &(curr_proc->p_supportStruct->sup_exceptState[passup_type]);
 
-        debug(15, ((state_t*) BIOSDATAPAGE)->s_reg[0], ((state_t*) BIOSDATAPAGE)->s_reg[1], ((state_t*) BIOSDATAPAGE)->s_reg[2]);
 
-        debug(17, sup_exceptState_p->s_reg[0], sup_exceptState_p->s_reg[1], sup_exceptState_p->s_reg[2]);
         copyState(sup_exceptState_p, (state_t*) BIOSDATAPAGE);
 
-        debug(15,17,19,passup_type);
         /*perform LDCXT using field from correct sup_exceptContext field of curr_proc*/
         context_t* sup_exceptContext_p = &(curr_proc->p_supportStruct->sup_exceptContext[passup_type]);
-        debug(15,17,19,21);
         LDCXT(sup_exceptContext_p->c_stackPtr, sup_exceptContext_p->c_status, sup_exceptContext_p->c_pc);
-        debug(15,17,19,passup_type);
     }
 }
 
@@ -465,49 +459,18 @@ void copyState(state_t* dest, state_t* src)
     dest->s_cause   = src->s_cause;
     dest->s_status  = src->s_status;
     dest->s_pc      = src->s_pc;
-    int i = 0;
-    /*debug(i,777,777,777);*/
-    
-    
-    debug(777,777,777,777);
-    dest->s_reg[0] = src->s_reg[0];
-    dest->s_reg[1] = src->s_reg[1];
-    dest->s_reg[2] = src->s_reg[2];
-    dest->s_reg[3] = src->s_reg[3];
-    dest->s_reg[4] = src->s_reg[4];
-    dest->s_reg[5] = src->s_reg[5];
-    dest->s_reg[6] = src->s_reg[6];
-    dest->s_reg[7] = src->s_reg[7];
-    dest->s_reg[8] = src->s_reg[8];
-    dest->s_reg[9] = src->s_reg[9];
-    dest->s_reg[10] = src->s_reg[10];
-    dest->s_reg[11] = src->s_reg[11];
-    dest->s_reg[12] = src->s_reg[12];
-    dest->s_reg[13] = src->s_reg[13];
-    dest->s_reg[14] = src->s_reg[14];
-    dest->s_reg[15] = src->s_reg[15];
-    dest->s_reg[16] = src->s_reg[16];
-    dest->s_reg[17] = src->s_reg[17];
-    dest->s_reg[18] = src->s_reg[18];
-    dest->s_reg[19] = src->s_reg[19];
-    dest->s_reg[20] = src->s_reg[20];
-    dest->s_reg[21] = src->s_reg[21];
-    dest->s_reg[22] = src->s_reg[22];
-    dest->s_reg[23] = src->s_reg[23];
-    dest->s_reg[24] = src->s_reg[24];
-    dest->s_reg[25] = src->s_reg[25];
-    dest->s_reg[26] = src->s_reg[26];
-    dest->s_reg[27] = src->s_reg[27];
-    dest->s_reg[28] = src->s_reg[28];
-    dest->s_reg[29] = src->s_reg[29];
-    dest->s_reg[30] = src->s_reg[30];
+    int i;
+    debug(1,1,1,1);
 
+    for(i = 0; i < 22; i++)
+        dest->s_reg[i] = src->s_reg[i];
 
-    /*for (i = 0; i < STATEREGNUM; i++)
+    dest->s_reg[22] = src->s_reg[22];   /*something fishy going on...*/
+
+    for (i = 23; i < STATEREGNUM; i++)
     {
         dest->s_reg[i] = src->s_reg[i];
-    }*/
-    /*debug(777,777,777,777);*/
+    }
         
 }
 

@@ -261,20 +261,17 @@ void test() {
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
-	debug(6,6,6,6);
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_pc =  (memaddr) p5gen;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = p5Stack;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
-	debug(10,10,10,10);
+	/*debug(10,10,10,10);*/
 	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
-	debug(7,7,7,7);
 	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
-	debug(8,8,8,8);
 	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
-	debug(9,9,9,9);
+	/*debug(9,9,9,9);*/
 	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
 
 	print("p1 knows p5 ended\n");
@@ -315,7 +312,6 @@ void p2() {
 	/* initialize all semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)
 		s[i] = 0;
-	debug(50,50,50,50);
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
 		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */
@@ -368,7 +364,6 @@ void p2() {
 
 /* p3 -- clock semaphore test process */
 void p3() {
-	debug(33,33,33,333);
 	cpu_t	time1, time2;
 	cpu_t	cpu_t1,cpu_t2;		/* cpu time used       */
 	int		i;
@@ -382,7 +377,6 @@ void p3() {
 		SYSCALL(WAITCLOCK, 0, 0, 0);
 		/*debug(44,44,44,444);*/
 		STCK(time2);			/* new time of day */
-		debug(time2, time1, time2 - time1, CLOCKINTERVAL >> 1);
 	}
 
 	/*print("p3 - WAITCLOCK OK\n");*/
@@ -403,7 +397,6 @@ void p3() {
 
 
 	SYSCALL(VERHOGEN, (int)&endp3, 0, 0);				/* V(endp3)        */
-	debug(3,3,333,3);
 	/*should have 2 procs in ready queue now*/
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p3    */
 
@@ -457,6 +450,7 @@ void p4() {
 
 /* p5's program trap handler */
 void p5gen() {
+	/*debug(55,55,555,555);*/
 	unsigned int exeCode = pFiveSupport.sup_exceptState[GENERALEXCEPT].s_cause;
 	exeCode = (exeCode & CAUSEMASK) >> 2;
 	switch (exeCode) {

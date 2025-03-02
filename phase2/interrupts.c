@@ -188,7 +188,7 @@ void PLTInterruptHandler()
 {
     /*acknowledge PLT interrupt by loading timer with new value: all ones with leading bit 0*/
     /*debug(46,46,46,46);*/
-    debug(curr_proc,49,process_cnt,softblock_cnt);
+    /*debug(curr_proc,49,process_cnt,softblock_cnt);*/
     setTIMER(0x7FFFFFFF);
     /*debug(curr_proc,49,49,49);*/
     /*copy processor state (BIOS Data Page) into pcb's p_s */
@@ -198,7 +198,7 @@ void PLTInterruptHandler()
     cpu_t quantum_end_time;
     STCK(quantum_end_time);
     curr_proc->p_time += (quantum_end_time - quantum_start_time);
-    debug(quantum_end_time-quantum_start_time, quantum_end_time, quantum_start_time,0);
+    /*debug(quantum_end_time-quantum_start_time, quantum_end_time, quantum_start_time,0);*/
 
     /*Place the Current Process on the Ready Queue*/
     insertProcQ(&ready_queue, curr_proc);
@@ -209,14 +209,14 @@ void PLTInterruptHandler()
 void IntervalTimerInterruptHandler()
 {
     /*acknowledge interrupt by loading interval timer with 100 millisecs*/
-    debug(48,48,48,48);
+    /*debug(48,48,48,48);*/
 
     LDIT(100000);
     
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
     pcb_PTR p;
-    debug(48,48,48,softblock_cnt);
+    /*debug(48,48,48,softblock_cnt);*/
     while ((p = removeBlocked(&device_sem[PSEUDOCLK])) != NULL)
     {
         /*debug(95,95,95,95);*/
@@ -227,12 +227,12 @@ void IntervalTimerInterruptHandler()
 
     /*reset pseudo-clock semaphore to 0*/
     device_sem[PSEUDOCLK] = 0;
-    debug(curr_proc, 4848, softblock_cnt, 4848);
+    /*debug(curr_proc, 4848, softblock_cnt, 4848);*/
     /*return control to curr_proc (switchContext func on saved exception on BIOS Data Page)
     call scheduler if there's no current process to return to*/
     if(curr_proc != NULL)
     {
-        debug(4848,curr_proc,4848,4848);
+        /*debug(4848,curr_proc,4848,4848);*/
 
         LDST((state_t*) BIOSDATAPAGE);
     }
