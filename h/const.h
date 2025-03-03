@@ -17,11 +17,19 @@
 #define ALLOFF			0x00000000
 #define IMON            0x0000FF00
 
+#define TERMSTATMASK	0xFF
+#define CAUSEMASK		0xFF
+
+#define CLEAR31MSB 0x00000001
+#define CLEAR26MSB 0x0000001F
+
+
 /*semaphores for sentinel nodes*/
 #define ZERO 0
 #define MAXINT 2147483647
 
 /*index for pseudo-clock in device semaphores*/
+#define DEVSEMNO  49
 #define PSEUDOCLK 48
 
 #define MAXPROC 20
@@ -34,9 +42,13 @@
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
 #define RAMBASESIZE		0x10000004
-#define TODLOADDR		  0x1000001C
+#define TODLOADDR		0x1000001C
 #define INTERVALTMR		0x10000020	
 #define TIMESCALEADDR	0x10000024
+#define CLOCKINTERVAL	100000UL	/* interval to V clock semaphore */
+#define TIMESLICE       5000UL
+#define PLTSTART        0x7FFFFFFF
+
 
 
 /* utility constants */
@@ -46,6 +58,13 @@
 #define	FALSE			    0
 #define HIDDEN			  static
 #define EOS				    '\0'
+#define TERMWRITE           0
+#define TERMREAD            1
+#define SUBDEVPERTERM       2
+#define GETEXCCODE          2
+#define GETKUP              3
+#define GETINTLINE          8
+
 
 #define NULL 			    ((void *)0xFFFFFFFF)
 
@@ -92,7 +111,9 @@
 #define KUSEG           0x80000000
 #define RAMSTART        0x20000000
 #define BIOSDATAPAGE    0x0FFFF000
-#define	PASSUPVECTOR	  0x0FFFF900
+#define	PASSUPVECTOR	0x0FFFF900
+#define STACKPAGETOP    0x20001000
+#define DEVREGBASE      0x10000054
 
 /* system call codes */
 #define	CREATETHREAD	1	/* create thread */

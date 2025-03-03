@@ -2,8 +2,11 @@
 #define SCHEDULER
 
 #include "../h/types.h"
-extern cpu_t quantum_start_time; /*records starting time of current process's quantum*/
+
+/*records time intervals (TOD)*/
+extern cpu_t time_start; 
 
 extern void scheduler();
 extern void switchContext(pcb_PTR to_be_executed);
+
 #endif

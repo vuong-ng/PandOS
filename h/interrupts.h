@@ -1,10 +1,10 @@
 #ifndef INTERRUPTS
 #define INTERRUPTS
 
-
-#define CLEAR31MSB 0x00000001
-#define GETINTLINE 8
-
 extern void interruptHandler(unsigned int cause);
+extern int getPendingDevice(memaddr* int_line_bitmap);
+extern void nonTimerInterruptHandler(int interrupt_line, int dev_no);
+extern void PLTInterruptHandler();
+extern void IntervalTimerInterruptHandler();
 
 #endif
