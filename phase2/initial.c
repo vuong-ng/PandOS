@@ -12,17 +12,31 @@ pcb_PTR ready_queue; /*tail pointer to a queue of pcbs that are in the “ready�
 pcb_PTR curr_proc; /*pointer to the pcb that is in the “running” state, i.e. the current executing process.*/
 int device_sem [49];
 
-
+/*************************************************/
+/* Main Entry Point                              */
+/* Purpose: Initialize system and launch first    */
+/* process                                       */
+/*                                               */
+/* Implementation:                                */
+/* 1. Initialize Pass Up Vector                  */
+/* 2. Initialize system data structures          */
+/* 3. Setup first process                        */
+/* 4. Launch scheduler                           */
+/*                                               */
+/* Returns: 1 on error (should never return)     */
+/*************************************************/
 int main()
 {
-    /*Initialize Pass Up Vector*/
+    /* Initialize Pass Up Vector for exceptions:
+     * - TLB refill handler and stack
+     * - General exception handler and stack */
     passupvector_t* passupvec = (passupvector_t*) PASSUPVECTOR;
     passupvec->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
     passupvec->tlb_refll_stackPtr = STACKPAGETOP;
     passupvec->execption_handler =(memaddr) generalExceptionHandler;
     passupvec->exception_stackPtr = STACKPAGETOP;
 
-    /*Initialize Level 2 variables*/
+    /*Initialize Level 2 variables: Process Control Blocks, Active Semaphore List*/
     initPcbs();
     initASL();
 
@@ -35,26 +49,28 @@ int main()
     for(i = 0; i < DEVSEMNO; i++)
         device_sem[i] = 0;
 
-    LDIT(CLOCKINTERVAL);    /*Load the system-wide Interval Timer with 100 milliseconds*/
-    curr_proc = allocPcb(); /*Instantiate a single process*/
-    insertProcQ(&ready_queue, curr_proc); /*place pcb in Ready Queue*/
-    process_cnt++; /*increment process_cnt*/
+
+    LDIT(CLOCKINTERVAL);                    /*Load the system-wide Interval Timer with 100 milliseconds*/
+    curr_proc = allocPcb();                 /*Instantiate a single process*/
+    insertProcQ(&ready_queue, curr_proc);   /*place pcb in Ready Queue*/
+    process_cnt++;                          /*increment process_cnt*/
 
 
     /*initializing the processor state */
     /*Local Timer (27) enabled, interrupt mask on (15-8), interrupt (2) enabled, kernel mode on (= 0), previous bits*/
     curr_proc->p_s.s_status = TEBITON | IMON | IEPBITON;
     curr_proc->p_s.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE);  /*set stack pointer to RAMTOP*/
-    curr_proc->p_s.s_pc = (memaddr) test;   /*set pc to test*/
+    curr_proc->p_s.s_pc = (memaddr) test;                                 /*set pc to test*/
     curr_proc->p_s.s_t9 = (memaddr) test; 
 
 
-    /*set all Proc Tree fields to NULL*/
+    /*set all process tree fields to NULL*/
     curr_proc->p_prnt = NULL;
     curr_proc->p_child = NULL;
     curr_proc->p_sib = NULL;
     curr_proc->p_sib_left = NULL;
 
+    /* Initialize process control fields */
     curr_proc->p_time = (cpu_t) 0;
     curr_proc->p_semAdd = NULL;
     curr_proc->p_supportStruct = NULL;
@@ -64,5 +80,5 @@ int main()
     scheduler();
 
     /*do nothing here, scheduler never returns*/ 
-    return 1; /*error*/
+    return 1;           /*error*/
 }
