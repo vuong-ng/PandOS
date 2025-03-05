@@ -136,10 +136,11 @@ int getPendingDevice(memaddr* int_line_bitmap)
 /*************************************************/
 void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 {
-    STCK(time_start); /*to store time spent in interrupt handling*/
+    STCK(time_start); 
+    /*store time spent in interrupt handling*/
 
-    /*compute the starting address of the device’s device register*/
     device_t* device_register = DEVREGBASE + (interrupt_line - 3) * 0x80 + dev_no * 0x10;
+    /*compute the starting address of the device’s device register*/
     
     unsigned int saved_status;
     int* device_semAdd;
@@ -217,7 +218,8 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 /*************************************************/
 void PLTInterruptHandler()
 {
-    setTIMER(PLTSTART); /*acknowledge PLT interrupt by loading timer with new value*/
+    setTIMER(PLTSTART); 
+    /*acknowledge PLT interrupt by loading timer with new value*/
 
     /*copy processor state (BIOS Data Page) into process state */
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);
@@ -225,7 +227,9 @@ void PLTInterruptHandler()
     /*update accumulated CPU time for current process*/
     updateTime(curr_proc);
 
-    insertProcQ(&ready_queue, curr_proc); /*place the Current Process on the Ready Queue*/
+    insertProcQ(&ready_queue, curr_proc); 
+    /*place the Current Process on the Ready Queue*/
+
     scheduler();    /*call scheduler*/
 }
 
@@ -247,9 +251,11 @@ void PLTInterruptHandler()
 /*************************************************/
 void IntervalTimerInterruptHandler()
 {
-    STCK(time_start); /*to store time spent in interrupt handling*/
+    STCK(time_start); 
+    /*store time spent in interrupt handling*/
 
-    LDIT(CLOCKINTERVAL);  /*acknowledge interrupt by loading interval timer with 100 millisecs*/
+    LDIT(CLOCKINTERVAL);  
+    /*acknowledge interrupt by loading interval timer with 100 millisecs*/
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
     pcb_PTR p;
@@ -270,8 +276,9 @@ void IntervalTimerInterruptHandler()
         LDST((state_t*) BIOSDATAPAGE);
     }
 
-    /*call scheduler if there's no current process to return to*/
-    else
+    else{
+        /*call scheduler if there's no current process to return to*/
         scheduler();
+    }
 } 
 

@@ -2,12 +2,15 @@
 *
 * Module: Exception and system call handling for Pandos OS
 *
-* Brief: handle exception while executing
+* Brief: Handle 2 types of exception while executing: 
+*        1. TLB-Refill events, a relatively frequent occurrence triggered 
+            during address translation when no matching entries are found in the TLB
+         2. All other exception types: Interrupts, Syscalls, TLB exceptions, program trap
 *
 * Components:
-* - General Exception Handler: Routes exceptions to specific handlers
-* - System Call Handler: Processes 8 types of system calls
-* - Trap Handler: Handles program traps and privilege violations
+* - General Exception Handler: Routes exceptions to specific handlers based on cause of saved exception state
+* - System Call Handler: Processes 8 types of system calls depending on the value found in a0 
+* - Trap Handler: Handles program traps and privilege violations defined as an exception with Cause.ExcCodes of 4-7, 9-12
 * - Semaphore Operations: P (wait) and V (signal) primitives
 *
 * Exception Types:
@@ -162,8 +165,12 @@ void syscallHandler()
 {
     /*check user/kernel mode and call trap handler if necessary*/
     unsigned int status = ((state_t*) BIOSDATAPAGE)->s_status;
-    status = (status >> GETKUP) & CLEAR31MSB;                                  /*get status code for syscall*/
-    if (status == 1)                                                           /*processor currently in user-mode, call trap handler*/
+
+    status = (status >> GETKUP) & CLEAR31MSB;                                  
+    /*get status code for syscall*/
+    
+    if (status == 1)                                                          
+    /*processor currently in user-mode, call trap handler*/
     {
         (((state_t*) BIOSDATAPAGE)->s_cause) &= 0b11111111111111111111111110000011;
         (((state_t*) BIOSDATAPAGE)->s_cause) |= 0b00000000000000000000000000101000;       /*set Cause.ExcCode to 10 - RI*/
@@ -180,13 +187,15 @@ void syscallHandler()
         pcb_PTR new_proc = allocPcb();
 
         /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
-        if (new_proc == NULL)
+        if (new_proc == NULL){
             /*if new process is NULl, put -1 into v0*/
             curr_proc->p_s.s_v0 = -1;
+        }
         else 
         {
             /*if new process is NULl, put 0 into v0*/
             curr_proc->p_s.s_v0 = 0;
+
             copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); 
             /*copy saved exception state into the new process state*/
 

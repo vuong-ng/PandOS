@@ -65,7 +65,9 @@ void scheduler()
         if (process_cnt > 0 && softblock_cnt > 0)
         /*If the Process Count > 0 and the Soft-block Count > 0 enter a Wait State*/
         {
-            setSTATUS((IECBITON | IMON) & TEBITOFF);        /*enable interrupts and disable PLT*/
+            setSTATUS((IECBITON | IMON) & TEBITOFF);        
+            /*enable interrupts and disable PLT*/
+            
             WAIT();  
         }
 
