@@ -150,7 +150,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     STCK(time_start); 
     /*store time spent in interrupt handling*/
 
-    device_t* device_register = DEVREGBASE + (interrupt_line - 3) * 0x80 + dev_no * 0x10;
+    device_t* device_register = DEVREGBASE + (interrupt_line - 3) * DEVREGINTSCALE + dev_no * DEVREGDEVSCALE;
     /*compute the starting address of the device’s device register*/
     
     unsigned int saved_status;

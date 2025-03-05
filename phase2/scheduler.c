@@ -94,6 +94,7 @@ void scheduler()
 /*                                               */
 /* Returns: void (never returns directly)        */
 /*************************************************/
+/**/
 void switchContext(pcb_PTR to_be_executed)
 {
     /* Get current timestamp*/
@@ -105,3 +106,4 @@ void switchContext(pcb_PTR to_be_executed)
 
     LDST(&to_be_executed->p_s);     /*put saved state in next process' state*/
 }
+

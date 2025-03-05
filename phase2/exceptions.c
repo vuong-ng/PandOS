@@ -170,8 +170,8 @@ void syscallHandler()
     if (status == 1)                                                          
     /*processor currently in user-mode, call trap handler*/
     {
-        (((state_t*) BIOSDATAPAGE)->s_cause) &= 0b11111111111111111111111110000011;
-        (((state_t*) BIOSDATAPAGE)->s_cause) |= 0b00000000000000000000000000101000;       /*set Cause.ExcCode to 10 - RI*/
+        (((state_t*) BIOSDATAPAGE)->s_cause) &= CLEAREXCCODE;       /*Clear Cause.ExcCode*/
+        (((state_t*) BIOSDATAPAGE)->s_cause) |= EXCCODERI;       /*set Cause.ExcCode to 10 - RI*/
         trapHandler();
     }
         
@@ -211,8 +211,7 @@ void syscallHandler()
         }
         
         /*return to current process*/
-        increasePC();
-        LDST((state_t*) BIOSDATAPAGE);
+        syscallReturnToCurr();
         break;
     }
 
@@ -255,8 +254,7 @@ void syscallHandler()
         Verhogen(((state_t*) BIOSDATAPAGE)->s_a1);
             
         /*return control to current process*/
-        increasePC();
-        LDST((state_t*) BIOSDATAPAGE);
+        syscallReturnToCurr();
         break;
     }
         
@@ -295,8 +293,7 @@ void syscallHandler()
         ((state_t*) BIOSDATAPAGE)->s_v0 = curr_proc->p_time; 
 
         /*return control to current process*/
-        increasePC();
-        LDST((state_t*) BIOSDATAPAGE);
+        syscallReturnToCurr();
         break;
     }
     
@@ -315,8 +312,7 @@ void syscallHandler()
         ((state_t*) BIOSDATAPAGE)->s_v0 = curr_proc->p_supportStruct;      
 
         /*return control to current process*/
-        increasePC();
-        LDST((state_t*) BIOSDATAPAGE);
+        syscallReturnToCurr();
         break;
     }
     
@@ -594,4 +590,19 @@ void copyState(state_t* dest, state_t* src)
     int i;
     for (i = 0; i < STATEREGNUM; i++)
         dest->s_reg[i] = src->s_reg[i];
+}
+
+/*************************************************/
+/* Syscall returning control to current process    */
+/* Purpose: Increase PC and                        */
+/* transfers control to a new process            */
+/*                                               */
+/* Parameters:  None                              */
+/*                                                */
+/* Returns: void (never returns directly)        */
+/*************************************************/
+void syscallReturnToCurr()
+{
+    increasePC();
+    LDST((state_t*) BIOSDATAPAGE);
 }

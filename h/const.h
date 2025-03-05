@@ -16,6 +16,8 @@
 #define TEBITOFF        0xF7FFFFFF
 #define ALLOFF			0x00000000
 #define IMON            0x0000FF00
+#define CLEAREXCCODE    0xFFFFFF83
+#define EXCCODERI       0x00000028
 
 #define TERMSTATMASK	0xFF
 #define CAUSEMASK		0xFF
@@ -114,6 +116,8 @@
 #define	PASSUPVECTOR	0x0FFFF900
 #define STACKPAGETOP    0x20001000
 #define DEVREGBASE      0x10000054
+#define DEVREGINTSCALE  0x80
+#define DEVREGDEVSCALE  0x10
 
 /* system call codes */
 #define	CREATETHREAD	1	/* create thread */

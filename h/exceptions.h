@@ -60,6 +60,8 @@ extern void increasePC();               /* Advances program counter by 4 */
 extern void updateTime(pcb_PTR proc);   /* Updates CPU time used by a process */
 extern void copyState(state_t* dest, state_t* src);     /* Copies processor state from source to destination */
 extern int isDeviceSem(int* semAdd);    /* Checks if semaphore belongs to a device */
+extern void syscallReturnToCurr();   /*increase PC and transfer control to current process*/
+
 
 
 #endif
