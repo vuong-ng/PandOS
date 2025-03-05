@@ -120,36 +120,42 @@ void trapHandler()
 /* Handles 8 types of system calls:              */
 /*                                               */
 /* SYS1 (CREATE PROCESS):                         */
-/*   - Params: state_t* procState, void* supStr  */
-/*   - Returns: 0 on success, -1 if no resources */
+/*   - Use processor state, suppport structure    */
+/*         from saved exception state             */
+/*   - Returns 0 on success, -1 if no resources in v0 */
 /*                                               */
-/* SYS2 (TERMINATE PROCESS):                      */
-/*   - Params: none                              */
-/*   - Returns: never returns                    */
+/* SYS2 (TERMINATE PROCESS):                     */
+/*   - Terminate process and children,            */
+/*               call Scheduler                    */
 /*                                               */
 /* SYS3 (PASSEREN):                              */
-/*   - Params: int* semaphore                    */
-/*   - Returns: control to process when unblocked*/
+/*   - Use semaphore address in a1               */
+/*       from saved exception state               */
+/*   - Returns control to current process if      */
+/*           not blocked or call scheduler        */
 /*                                               */
 /* SYS4 (VERHOGEN):                             */
-/*   - Params: int* semaphore                    */
-/*   - Returns: control to process               */
+/*   - Use semaphore address in a1               */
+/*       from saved exception state               */
+/*   - Returns control to current process         */
 /*                                               */
 /* SYS5 (WAIT IO):                               */
-/*   - Params: int line, int dev, int read      */
-/*   - Returns: control when I/O complete        */
+/*   - Use interrupt line in a1,                 */
+/*        device number in a2,                    */
+/*       and if waiting for a terminal read in a3 */
+/*       from saved exception state               */
+/*   - perform P on device semaphore            */
 /*                                               */
 /* SYS6 (GET CPU TIME):                           */
-/*   - Params: none                             */
-/*   - Returns: CPU time used by process        */
+/*   - Returns CPU time used by process to v0     */
 /*                                               */
 /* SYS7 (WAIT CLOCK):                            */
-/*   - Params: none                             */
-/*   - Returns: control after interval          */
+/*   - Perform P on pseudo-clock semaphore       */
 /*                                               */
 /* SYS8 (GET SUPPORT STRUCT):                    */
-/*   - Params: none                             */
-/*   - Returns: support structure pointer       */
+/*   - pass current process support structrure*/ 
+/*                                         in v0 */
+/*   - Returns control to the current process    */
 /*                                              */
 /* @return void                                 */
 /************************************************/
@@ -444,7 +450,7 @@ void killDescendants(pcb_PTR first_child)
 /* blocking process if necessary                  */
 /*                                               */
 /* Parameters:                                    */
-/* - semAdd: pointer to semaphore to be P'ed   */
+/* - semAdd: address of semaphore to be P'ed   */
 /*                                               */
 /* Returns: void                                  */
 /* Note: May not return if process blocks        */
@@ -477,7 +483,7 @@ void Passeren(int* semAdd)
 /* unblocking process if any are blocked          */
 /*                                               */
 /* Parameters:                                    */
-/* - semAdd: pointer to semaphore to be V'ed      */
+/* - semAdd: address of semaphore to be V'ed      */
 /*                                               */
 /* Returns:                                       */
 /* - pcb_PTR: pointer to unblocked process       */
@@ -551,7 +557,7 @@ void updateTime(pcb_PTR proc)
 /* falls within the device semaphore array        */
 /*                                               */
 /* Parameters:                                    */
-/* - semAdd: pointer to semaphore to check       */
+/* - semAdd: address of semaphore to check       */
 /*                                               */
 /* Returns:                                       */
 /* - TRUE if semaphore is a device semaphore     */

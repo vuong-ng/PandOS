@@ -25,6 +25,8 @@
 * - curr_proc: Currently executing process
 * - device_sem: Device semaphore array
 * - time_start: CPU time accounting
+* @note: For I/O interrupt, CPU time will be updated into newly unblocked process
+*        For Interval Timer interrupt: time spent will be charged into current process
 *****************************************************************************/
 
 #include "../h/asl.h"
@@ -58,8 +60,7 @@
 /*************************************************/
 void interruptHandler(unsigned int cause)
 {
-    /*determine highest priority pending interrupt,
-    Interrupt Line 0 skipped for uniprocessor*/
+    /*determine highest priority pending interrupt*/
 
     /* Check PLT Interrupt - Interrupt Line 1 */
     if      ((cause >> (PLTINT + GETINTLINE)         & CLEAR31MSB) == ON){PLTInterruptHandler();}  
@@ -92,8 +93,7 @@ void interruptHandler(unsigned int cause)
 /* checking the interrupt line's bitmap           */
 /*                                               */
 /* Parameters:                                    */
-/* - int_line_bitmap: pointer to interrupt line   */
-/*   bitmap in memory                            */
+/* - int_line_bitmap: int of interrupt line      */
 /*                                               */
 /* Returns:                                       */
 /* - 0-7: device number with pending interrupt   */
@@ -120,18 +120,29 @@ int getPendingDevice(memaddr* int_line_bitmap)
 /* acknowledging the interrupt, saving status,    */
 /* and unblocking waiting processes              */
 /*                                               */
+/* Implementation:                                */
+/* 1. Record interrupt start time                 */
+/* 2. Calculate device register address          */
+/* 3. Handle device type:                         */
+/*    Terminal: Handle read/write separately      */
+/*    Non-terminal: Single operation             */
+/* 4. Save device status and acknowledge          */
+/* 5. Unblock waiting process if any             */
+/* 6. Return control to current process          */
+/*                                               */
 /* Parameters:                                    */
 /* - interrupt_line: interrupt line number (3-7)  */
 /* - dev_no: device number on the line (0-7)     */
 /*                                               */
 /* Device Types:                                  */
 /* - Terminal (Line 7): Read/Write operations    */
-/* - Non-Terminal: Other devices                */
+/* - Non-Terminal:                               */
 /*   - Disk (Line 3)                            */
 /*   - Flash (Line 4)                           */
 /*   - Network (Line 5)                         */
 /*   - Printer (Line 6)                         */
-/*                                               */
+/* - Note: CPU time spent will be charged into  */
+/*  unblocked process (if there is)             */
 /* Returns: void                                  */
 /*************************************************/
 void nonTimerInterruptHandler(int interrupt_line, int dev_no)
@@ -173,7 +184,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     else
     {
         saved_status = device_register->d_status;  /*save off status code from device register*/
-        device_register->d_command = ACK;       /*ACK device command*/
+        device_register->d_command = ACK;          /*ACK device command*/
         device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no];  /*get device semaphore*/
     }
         
@@ -243,6 +254,8 @@ void PLTInterruptHandler()
 /* 2. Unblock all processes on pseudo-clock      */
 /* 3. Reset pseudo-clock semaphore               */
 /* 4. Return control to process or scheduler     */
+/* - Note: CPU time spent will be charged into    */
+/*  current process                              */
 /*                                               */
 /* Parameters: none                              */
 /* Returns: void (never returns directly)        */
