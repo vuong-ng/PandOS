@@ -22,6 +22,7 @@
 * - curr_proc: Currently executing process
 * - device_sem: Device semaphore array
 * - ready_queue: Queue of ready processes
+* @note For blocking process, time spent in syscall handling charged to current process
 *****************************************************************************/
 
 #include "../h/exceptions.h"
@@ -176,6 +177,8 @@ void syscallHandler()
     }
         
     int a0 = ((state_t*) BIOSDATAPAGE)->s_a0;
+    increasePC(); 
+
     switch (a0)
     {
     /*Create Process (SYS1)*/
@@ -237,8 +240,7 @@ void syscallHandler()
         if ((*semAdd) - 1 >= 0)
         {
             (*semAdd)--;
-            increasePC();   
-            LDST((state_t*) BIOSDATAPAGE);
+            syscallReturnToCurr();
         }
             
         /*else: call Passeren operation to block process on ASL*/
@@ -319,9 +321,6 @@ void syscallHandler()
     /*default handler for undefined system calls*/
     default:
     {
-        /* move to next instruction */
-        increasePC();
-
         /* pass up undefined syscall */
         passUpOrDie(GENERALEXCEPT);
         break;
@@ -455,8 +454,6 @@ void Passeren(int* semAdd)
 {
     /* Decrement semaphore value */
     (*semAdd)--;
-
-    increasePC();   
 
     /*Copy current state to process PCB*/
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);      
@@ -603,6 +600,5 @@ void copyState(state_t* dest, state_t* src)
 /*************************************************/
 void syscallReturnToCurr()
 {
-    increasePC();
     LDST((state_t*) BIOSDATAPAGE);
 }
