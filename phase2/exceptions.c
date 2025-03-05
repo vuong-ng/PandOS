@@ -538,12 +538,10 @@ void updateTime(pcb_PTR proc)
 /*************************************************/
 int isDeviceSem(int* semAdd)
 {
-    int i, found = FALSE;
-
-    for (i = 0; i < DEVSEMNO; i++)
-     /* Check if semaphore address matches any device semaphore */
-        found |= (&device_sem[i] == semAdd);    /* Bitwise OR with comparison result */
-    return found;                               /* Return TRUE if match found, FALSE otherwise */
+    if (semAdd >= &device_sem[0] && semAdd <= &device_sem[DEVSEMNO-1]){
+        return TRUE;
+    }
+    return FALSE;                           /* Return TRUE if match found, FALSE otherwise */
 }
 
 /*************************************************/
