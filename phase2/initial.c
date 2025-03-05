@@ -1,5 +1,5 @@
 /******************************* INITIAL.c *************************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: System initialization and first process setup for Pandos OS
 * 
 * Components:
@@ -66,9 +66,9 @@ int main()
     softblock_cnt = 0;                  /* process in blocked state*/
     ready_queue = mkEmptyProcQ();       /*process in ready state*/
     curr_proc = NULL;
-    int i;
 
     /*initialize all device semaphores to 0*/
+    int i;
     for(i = 0; i < DEVSEMNO; i++)
         device_sem[i] = 0;
 
@@ -80,7 +80,7 @@ int main()
 
 
     /*initializing the processor state */
-    /*Local Timer (27) enabled, interrupt mask on (15-8), interrupt (2) enabled, kernel mode on (= 0), previous bits*/
+    /*Local Timer (bit 27) enabled, interrupt mask on (bit 15-8), interrupt (bit 2) enabled, kernel mode on (= 0)*/
     curr_proc->p_s.s_status = TEBITON | IMON | IEPBITON;
     curr_proc->p_s.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE);  /*set stack pointer to RAMTOP*/
     curr_proc->p_s.s_pc = (memaddr) test;                                 /*set pc to test*/
@@ -103,5 +103,5 @@ int main()
     scheduler();
 
     /*do nothing here, scheduler never returns*/ 
-    return 1;           /*error*/
+    return 1;           /*error if scheduler returns*/
 }

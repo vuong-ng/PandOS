@@ -11,7 +11,6 @@
 * - General Exception Handler: Routes exceptions to specific handlers based on cause of saved exception state
 * - System Call Handler: Processes 8 types of system calls depending on the value found in a0 
 * - Trap Handler: Handles program traps and privilege violations defined as an exception with Cause.ExcCodes of 4-7, 9-12
-* - Semaphore Operations: P (wait) and V (signal) primitives
 *
 * Exception Types:
 * - Interrupts (case 0)
@@ -96,7 +95,6 @@ void generalExceptionHandler()
     }
         
     default:
-        /* Handle unknown exceptions */
         break;
     }
 }
@@ -105,12 +103,6 @@ void generalExceptionHandler()
 /* Trap Handler                                   */
 /* Purpose: Handles program traps by passing them */
 /* up to support level or terminating process     */
-/*                                               */
-/* Program traps include:                         */
-/* - Reserved instruction                         */
-/* - Overflow                                     */
-/* - Invalid memory access                        */ 
-/* - Privilege violation                          */
 /*                                               */
 /* Parameters: none                              */
 /* Returns: void                                  */
@@ -186,21 +178,20 @@ void syscallHandler()
         /* allocate new process control block */
         pcb_PTR new_proc = allocPcb();
 
-        /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
         if (new_proc == NULL){
-            /*if new process is NULl, put -1 into v0*/
+            /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
             curr_proc->p_s.s_v0 = -1;
         }
         else 
         {
-            /*if new process is NULl, put 0 into v0*/
+            /*if new process is not NULL, put 0 into v0*/
             curr_proc->p_s.s_v0 = 0;
 
             copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); 
             /*copy saved exception state into the new process state*/
 
             new_proc->p_supportStruct = ((state_t*) BIOSDATAPAGE)->s_a2;  
-            /*copy support struct from saved exception state into new process support struct*/
+            /*initialize new process support struct from support struct from saved exception state */
                 
             insertProcQ(&ready_queue, new_proc);    
             /*place new process on ready queue*/
@@ -213,7 +204,7 @@ void syscallHandler()
             new_proc->p_semAdd = NULL;     /*set new process p_semAdd to NULL*/
         }
         
-        /*for non-blocking syscalls, increase PC & LDST from saved exception state*/
+        /*return to current process*/
         increasePC();
         LDST((state_t*) BIOSDATAPAGE);
         break;
@@ -233,7 +224,7 @@ void syscallHandler()
         
     /*Passeren (P) (SYS3)*/
     case PASSERN:
-    /*P: decrease value of semaphore, if < 0, block the process (sleep)*/
+    /*P: decrease value of semaphore, if < 0, block the process (put it to sleep)*/
     {
         int* semAdd = ((state_t*) BIOSDATAPAGE)->s_a1;
         
@@ -245,7 +236,7 @@ void syscallHandler()
             LDST((state_t*) BIOSDATAPAGE);
         }
             
-        /*else: process blocked on ASL call Passeren operation*/
+        /*else: call Passeren operation to block process on ASL*/
         else
             Passeren(semAdd);
         break;
@@ -276,14 +267,14 @@ void syscallHandler()
 
         /* Calculate semaphore address based on device type */
         if(interrupt_line != TERMINT)
-            /* Non-terminal device: offset = (line-3)*8 + dev# */
+            /* Non-terminal device: index = (line-3)*8 + dev# */
             device_semAdd = &(device_sem[(interrupt_line - 3) * DEVPERINT + device_number]);
 
         else
-            /* Terminal device: offset = (line-3)*8 + dev#*2 + r/w */
+            /* Terminal device: index = (line-3)*8 + dev#*2 + r/w */
             device_semAdd = &(device_sem[(interrupt_line - 3) * DEVPERINT + device_number * SUBDEVPERTERM + terminal_read]);
             
-        /* block process on device semaphore */
+        /* block process on device semaphore, wait for device interrupts */
         Passeren(device_semAdd);
         break;
     }
@@ -329,7 +320,7 @@ void syscallHandler()
         /* move to next instruction */
         increasePC();
 
-        /* pass up undefined syscall up */
+        /* pass up undefined syscall */
         passUpOrDie(GENERALEXCEPT);
         break;
     }
@@ -347,15 +338,13 @@ void syscallHandler()
 /* - passup_type: type of exception to pass  */
 /*   (TLB, or General )                       */
 /*                                           */
-/* Returns: void (never returns if process   */
-/* is terminated)                            */
+/* Returns: no return                         */
 /**********************************************/
 void passUpOrDie(int passup_type)
 {
     /* Check if process has support structure */
     if(curr_proc->p_supportStruct == NULL)
     {
-
         /* No support structure - terminate process and descendants */
         killDescendants(curr_proc->p_child);
         killProcess(curr_proc);
@@ -455,7 +444,7 @@ void killDescendants(pcb_PTR first_child)
 /* blocking process if necessary                  */
 /*                                               */
 /* Parameters:                                    */
-/* - semAdd: pointer to semaphore to decrement   */
+/* - semAdd: pointer to semaphore to be P'ed   */
 /*                                               */
 /* Returns: void                                  */
 /* Note: May not return if process blocks        */
@@ -465,13 +454,12 @@ void Passeren(int* semAdd)
     /* Decrement semaphore value */
     (*semAdd)--;
 
-    /* Save process state before potential block*/
     increasePC();   
 
     /*Copy current state to process PCB*/
     copyState(&(curr_proc->p_s), (state_t*) BIOSDATAPAGE);      
     
-    /*(blocking) Update the accumulated CPU time for the Current Process*/
+    /*Update the accumulated CPU time for the Current Process before it is blocked*/
     updateTime(curr_proc);
 
     if(insertBlocked(semAdd, curr_proc) == FALSE)  /*blocked successfully*/
@@ -489,7 +477,7 @@ void Passeren(int* semAdd)
 /* unblocking process if any are blocked          */
 /*                                               */
 /* Parameters:                                    */
-/* - semAdd: pointer to removed process           */
+/* - semAdd: pointer to semaphore to be V'ed      */
 /*                                               */
 /* Returns:                                       */
 /* - pcb_PTR: pointer to unblocked process       */
@@ -574,7 +562,7 @@ int isDeviceSem(int* semAdd)
     if (semAdd >= &device_sem[0] && semAdd <= &device_sem[DEVSEMNO-1]){
         return TRUE;
     }
-    return FALSE;                           /* Return TRUE if match found, FALSE otherwise */
+    return FALSE;                     
 }
 
 /*************************************************/

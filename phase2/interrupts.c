@@ -126,7 +126,7 @@ int getPendingDevice(memaddr* int_line_bitmap)
 /*                                               */
 /* Device Types:                                  */
 /* - Terminal (Line 7): Read/Write operations    */
-/* - Non-Terminal: Single operation devices      */
+/* - Non-Terminal: Other devices                */
 /*   - Disk (Line 3)                            */
 /*   - Flash (Line 4)                           */
 /*   - Network (Line 5)                         */
@@ -153,19 +153,19 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         memaddr* RECV_COMMAND = &device_register->t_recv_command;
         memaddr* RECV_STATUS = &device_register->t_recv_status;
 
-        /*if transmit not ready (there is transmit interrupt), acknowledge (complete) */
+        /*if transmit not ready (there is transmit interrupt), acknowledge */
         if((*TRANSM_STATUS & TERMSTATMASK) != READY)
         {
             saved_status = *TRANSM_STATUS;      /*save off status code from device register*/
             *TRANSM_COMMAND = ACK;              /*ACK transmit command*/
-            device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * SUBDEVPERTERM + TERMWRITE];
+            device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * SUBDEVPERTERM + TERMWRITE]; /*get device semaphore*/
         }
-        /*else if transmit ready (there is receive interrupt), acknowledge (complete)*/
+        /*else if transmit ready (there is receive interrupt), acknowledge*/
         else if ((*TRANSM_STATUS & TERMSTATMASK) == READY)
         {
             saved_status = *RECV_STATUS;        /*save off status code from device register*/
             *RECV_COMMAND = ACK;                /*ACK receive command*/
-            device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * SUBDEVPERTERM + TERMREAD];
+            device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no * SUBDEVPERTERM + TERMREAD];  /*get device semaphore*/
         }
     }
 
@@ -174,7 +174,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     {
         saved_status = device_register->d_status;  /*save off status code from device register*/
         device_register->d_command = ACK;       /*ACK device command*/
-        device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no];
+        device_semAdd = &device_sem[(interrupt_line - 3) * DEVPERINT + dev_no];  /*get device semaphore*/
     }
         
     /*perform V on Nucleus maintained semaphore of this device*/
@@ -189,15 +189,13 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         /*charge to new unblocked pcb as it requested the IO*/
     }
 
-    /*return to current process*/
     if(curr_proc != NULL)
-    /*perform LDST on saved exception state on BIOS Data Page (processor 0 excp state) */
+    /*return to current process*/
     {
         LDST((state_t*) BIOSDATAPAGE);
     } 
     else{
-        /*if there's no current process, scheduler calls WAIT()*/
-        scheduler();
+        scheduler();  /*if there's no current process, scheduler calls WAIT()*/
     }
 }
 
@@ -214,7 +212,7 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
 /* 5. Call scheduler for next process            */
 /*                                               */
 /* Parameters: none                              */
-/* Returns: void (never returns directly)        */
+/* Returns: never returns                        */
 /*************************************************/
 void PLTInterruptHandler()
 {

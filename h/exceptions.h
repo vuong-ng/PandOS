@@ -13,7 +13,7 @@ extern void killDescendants(pcb_PTR first_child);
 extern void Passeren(int* semAdd);
 extern pcb_PTR Verhogen(int* semAdd);
 
-
+/*Helper Functions*/
 extern void increasePC();
 extern void updateTime(pcb_PTR proc);
 extern void copyState(state_t* dest, state_t* src);

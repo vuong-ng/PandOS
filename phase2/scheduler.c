@@ -65,15 +65,13 @@ void scheduler()
         if (process_cnt > 0 && softblock_cnt > 0)
         /*If the Process Count > 0 and the Soft-block Count > 0 enter a Wait State*/
         {
-            setSTATUS((IECBITON | IMON) & TEBITOFF);        
-            /*enable interrupts and disable PLT*/
-            
+            setSTATUS((IECBITON | IMON) & TEBITOFF);        /*enable interrupts and disable PLT*/
             WAIT();  
         }
 
         /*Deadlock for Pandos is defined as when the Process Count > 0 and the Soft-block Count is zero.*/
         if (process_cnt > 0 && softblock_cnt == 0)
-        /* when the Process Count > 0 and the Soft-block Count is zero, enter Deadlock*/
+        /* when the Process Count > 0 and the Soft-block Count is zero, Deadlock detected*/
             PANIC();
     }
 
@@ -82,7 +80,7 @@ void scheduler()
     {   
         setTIMER(TIMESLICE);        /*load 5 milliseconds into the PLT*/
         STCK(time_start);           /*start quantum of current process*/
-        LDST(&(curr_proc->p_s));    /*perform Load Process State stored in pcb of the Current Process*/
+        LDST(&(curr_proc->p_s));    /*perform Load Process State stored in pcb of the Current Process, Current Process starts running*/
     }
 }
 
@@ -98,16 +96,12 @@ void scheduler()
 /*************************************************/
 void switchContext(pcb_PTR to_be_executed)
 {
-    /*initilize time variable*/
-    cpu_t time_stop;
-
     /* Get current timestamp*/
+    cpu_t time_stop;
     STCK(time_stop);
 
     /*Add delta between start/stop to process time*/
     curr_proc->p_time += (time_stop - time_start);
 
-    /*load state of process to be executed, return processor to whatever interrupt state and mode was in 
-    effect when the exception occured*/
     LDST(&to_be_executed->p_s);     /*put saved state in next process' state*/
 }
