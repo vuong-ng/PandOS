@@ -12,13 +12,13 @@
 /* handlers based on the highest priority pending */
 /* interrupt line                                 */
 /*                                               */
-/* Parameters:                                    */
+/* Parameters:                                   */
 /* - cause: Cause register value containing      */
 /*         pending interrupt information         */
 /*                                               */
-/* Returns: void                                  */
+/* Returns: void                                 */
 /*                                               */
-/* Priority (highest to lowest):                  */
+/* Priority (highest to lowest):                 */
 /* 1. PLT Timer (Line 1)                         */
 /* 2. Interval Timer (Line 2)                    */
 /* 3. Disk Devices (Line 3)                      */
@@ -218,6 +218,8 @@ void PLTInterruptHandler()
 /*************************************************/
 void IntervalTimerInterruptHandler()
 {
+    STCK(time_start); /*to store time spent in interrupt handling*/
+
     LDIT(CLOCKINTERVAL);  /*acknowledge interrupt by loading interval timer with 100 millisecs*/
 
     /*unblock all pcbs blocked on pseudo-clock (49) semaphore*/
@@ -235,6 +237,7 @@ void IntervalTimerInterruptHandler()
     if(curr_proc != NULL)
     {
         /*return control to current process if it's not NULL*/
+        updateTime(curr_proc);
         LDST((state_t*) BIOSDATAPAGE);
     }
 

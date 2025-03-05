@@ -2,7 +2,7 @@
 #include "../h/scheduler.h"
 #include "../h/pcb.h"
 
-/*records time intervals (TOD)*/
+/*records time intervals (Time Of Day)*/
 cpu_t time_start; 
 
 /*************************************************/
@@ -52,7 +52,7 @@ void scheduler()
     {   
         setTIMER(TIMESLICE);        /*load 5 milliseconds into the PLT*/
         STCK(time_start);           /*start quantum of current process*/
-        LDST(&(curr_proc->p_s));    
+        LDST(&(curr_proc->p_s));    /*perform Load Process State stored in pcb of the Current Process*/
     }
 }
 
@@ -68,16 +68,16 @@ void scheduler()
 /*************************************************/
 void switchContext(pcb_PTR to_be_executed)
 {
-    /*load time*/
+    /*initilize time variable*/
     cpu_t time_stop;
 
     /* Get current timestamp*/
     STCK(time_stop);
 
-    /*Add delta between start/stop to total*/
+    /*Add delta between start/stop to process time*/
     curr_proc->p_time += (time_stop - time_start);
 
     /*load state of process to be executed, return processor to whatever interrupt state and mode was in 
     effect when the exception occured*/
-    LDST(&to_be_executed->p_s);     /*put saved state in next_proc's state*/
+    LDST(&to_be_executed->p_s);     /*put saved state in next process' state*/
 }

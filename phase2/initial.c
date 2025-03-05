@@ -41,19 +41,21 @@ int main()
     initASL();
 
     /*Initialize Nucleus maintained variables*/
-    process_cnt = 0;
-    softblock_cnt = 0;
-    ready_queue = mkEmptyProcQ();
+    process_cnt = 0;                    /*number of started but not terminated process*/
+    softblock_cnt = 0;                  /* process in blocked state*/
+    ready_queue = mkEmptyProcQ();       /*process in ready state*/
     curr_proc = NULL;
     int i;
+
+    /*initialize all device semaphores to 0*/
     for(i = 0; i < DEVSEMNO; i++)
         device_sem[i] = 0;
 
 
     LDIT(CLOCKINTERVAL);                    /*Load the system-wide Interval Timer with 100 milliseconds*/
     curr_proc = allocPcb();                 /*Instantiate a single process*/
-    insertProcQ(&ready_queue, curr_proc);   /*place pcb in Ready Queue*/
-    process_cnt++;                          /*increment process_cnt*/
+    insertProcQ(&ready_queue, curr_proc);   /*place process in Ready Queue*/
+    process_cnt++;                          /*increment process count*/
 
 
     /*initializing the processor state */
@@ -61,7 +63,7 @@ int main()
     curr_proc->p_s.s_status = TEBITON | IMON | IEPBITON;
     curr_proc->p_s.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE);  /*set stack pointer to RAMTOP*/
     curr_proc->p_s.s_pc = (memaddr) test;                                 /*set pc to test*/
-    curr_proc->p_s.s_t9 = (memaddr) test; 
+    curr_proc->p_s.s_t9 = (memaddr) test;                                 /*set s_t9 to the same value with pc*/
 
 
     /*set all process tree fields to NULL*/

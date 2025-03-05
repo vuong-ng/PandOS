@@ -100,15 +100,15 @@ void trapHandler()
 /* System call handler function                   */
 /* Handles 8 types of system calls:              */
 /*                                               */
-/* SYS1 (CREATETHREAD):                          */
+/* SYS1 (CREATE PROCESS):                         */
 /*   - Params: state_t* procState, void* supStr  */
 /*   - Returns: 0 on success, -1 if no resources */
 /*                                               */
-/* SYS2 (TERMINATETHREAD):                       */
+/* SYS2 (TERMINATE PROCESS):                      */
 /*   - Params: none                              */
 /*   - Returns: never returns                    */
 /*                                               */
-/* SYS3 (PASSERN):                              */
+/* SYS3 (PASSEREN):                              */
 /*   - Params: int* semaphore                    */
 /*   - Returns: control to process when unblocked*/
 /*                                               */
@@ -116,19 +116,19 @@ void trapHandler()
 /*   - Params: int* semaphore                    */
 /*   - Returns: control to process               */
 /*                                               */
-/* SYS5 (WAITIO):                               */
+/* SYS5 (WAIT IO):                               */
 /*   - Params: int line, int dev, int read      */
 /*   - Returns: control when I/O complete        */
 /*                                               */
-/* SYS6 (GETCPUTIME):                           */
+/* SYS6 (GET CPU TIME):                           */
 /*   - Params: none                             */
 /*   - Returns: CPU time used by process        */
 /*                                               */
-/* SYS7 (WAITCLOCK):                            */
+/* SYS7 (WAIT CLOCK):                            */
 /*   - Params: none                             */
 /*   - Returns: control after interval          */
 /*                                               */
-/* SYS8 (GETSPTPTR):                            */
+/* SYS8 (GET SUPPORT STRUCT):                    */
 /*   - Params: none                             */
 /*   - Returns: support structure pointer       */
 /*                                              */
@@ -138,11 +138,11 @@ void syscallHandler()
 {
     /*check user/kernel mode and call trap handler if necessary*/
     unsigned int status = ((state_t*) BIOSDATAPAGE)->s_status;
-    status = (status >> GETKUP) & CLEAR31MSB;
-    if (status == 1) /* currently in user-mode, call trap handler*/
+    status = (status >> GETKUP) & CLEAR31MSB;                                  /*get status code for syscall*/
+    if (status == 1)                                                           /*processor currently in user-mode, call trap handler*/
     {
         (((state_t*) BIOSDATAPAGE)->s_cause) &= 0b11111111111111111111111110000011;
-        (((state_t*) BIOSDATAPAGE)->s_cause) |= 0b00000000000000000000000000101000; /*set Cause.ExcCode to 10 - RI*/
+        (((state_t*) BIOSDATAPAGE)->s_cause) |= 0b00000000000000000000000000101000;       /*set Cause.ExcCode to 10 - RI*/
         trapHandler();
     }
         
@@ -157,15 +157,23 @@ void syscallHandler()
 
         /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
         if (new_proc == NULL)
+            /*if new process is NULl, put -1 into v0*/
             curr_proc->p_s.s_v0 = -1;
         else 
         {
+            /*if new process is NULl, put 0 into v0*/
             curr_proc->p_s.s_v0 = 0;
-            copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); /*copy saved exception state into the new process state*/
-            new_proc->p_supportStruct = ((state_t*) BIOSDATAPAGE)->s_a2;  /*copy support struct from saved exception state into new process support struct*/
+            copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); 
+            /*copy saved exception state into the new process state*/
+
+            new_proc->p_supportStruct = ((state_t*) BIOSDATAPAGE)->s_a2;  
+            /*copy support struct from saved exception state into new process support struct*/
                 
-            insertProcQ(&ready_queue, new_proc);    /*place new process on ready queue*/
-            insertChild(curr_proc, new_proc);       /*make new process a child of current process*/
+            insertProcQ(&ready_queue, new_proc);    
+            /*place new process on ready queue*/
+
+            insertChild(curr_proc, new_proc);       
+            /*make new process a child of current process*/
             process_cnt++;                       
 
             new_proc->p_time = (cpu_t) 0;  /*new process p_time set to zero*/
