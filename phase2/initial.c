@@ -1,3 +1,24 @@
+/******************************* INITIAL.c *************************************
+*
+* Module: System initialization and first process setup for Pandos OS
+* 
+* Components:
+* - Pass Up Vector: where the BIOS finds the address of the Nucleus functions to pass 
+*   control to for both TLB-Refill events and all other exceptions. 
+* - Process Control: PCBs, ASL, ready queue
+* - Device Management: Device semaphores array
+* - System Variables: Process counts and blocked process count
+*
+* Global State:
+* - process_cnt: Count of non-terminated processes
+* - softblock_cnt: Count of blocked but not terminated processes 
+* - ready_queue: Queue of ready processes
+* - curr_proc: Currently executing process
+* - device_sem[49]: Device semaphore array including semaphores of 49 devices
+*
+* Entry Point: main() - Initializes system and launches first process
+***************************************************************************/
+
 
 #include "../h/pcb.h"
 #include "../h/asl.h"

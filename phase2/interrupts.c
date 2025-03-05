@@ -1,3 +1,32 @@
+/******************************* INTERRUPTS.c *********************************
+*
+* Module: Interrupt handling and device management for Pandos OS
+*
+* Brief: A device or timer interrupt occurs when either a previously 
+*        initiated I/O request completes or when either a Processor Local Timer (PLT) 
+*        or the Interval Timer makes a 0x0000.0000 -> 0xFFFF.FFFF transition.
+*
+* Components:
+* - Interrupt Handler: Routes interrupts by priority
+* - Timer Handlers: PLT and Interval timer processing
+* - Device Interrupt Handlers: Manage interrupts from Disk, flash, network, printer, terminal
+* - Status Management: Device interrupt status and interrupts acknowledgement
+*
+* Interrupt Priority (highest to lowest):
+* 1. PLT Timer (Line 1)
+* 2. Interval Timer (Line 2) 
+* 3. Disk Devices (Line 3)
+* 4. Flash Devices (Line 4)
+* 5. Network Devices (Line 5)
+* 6. Printer Devices (Line 6)
+* 7. Terminal Devices (Line 7)
+*
+* Dependencies:
+* - curr_proc: Currently executing process
+* - device_sem: Device semaphore array
+* - time_start: CPU time accounting
+*****************************************************************************/
+
 #include "../h/asl.h"
 #include "../h/pcb.h"
 #include "../h/exceptions.h"

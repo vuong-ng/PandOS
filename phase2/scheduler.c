@@ -1,3 +1,31 @@
+/******************************* SCHEDULER.c *********************************
+*
+* Module: Process scheduling and dispatch for Pandos OS
+*
+* Brief: The Nucleus implement a simple preemptive round-robin 
+*        scheduling algorithm with a time slice value of 5 milliseconds.
+*
+* Components: 
+* - Scheduler: Selects next process to run
+* - Context Switch: Manages process state transitions
+* - Time Management: Tracks CPU usage per process
+*
+* Scheduling Policy:
+* - Round-robin with fixed time quantum
+* - Ready queue for runnable processes
+* - Special cases for empty queue:
+*   * System halt when no processes exist
+*   * Wait state when processes blocked
+*   * Deadlock detection
+*
+* Dependencies:
+* - curr_proc: Currently executing process
+* - ready_queue: Queue of ready processes
+* - process_cnt: Count of active processes
+* - softblock_cnt: Count of blocked processes
+* - time_start: CPU time accounting
+*****************************************************************************/
+
 #include "../h/initial.h"
 #include "../h/scheduler.h"
 #include "../h/pcb.h"

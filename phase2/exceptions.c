@@ -1,3 +1,27 @@
+/******************************* EXCEPTIONS.c *********************************
+*
+* Module: Exception and system call handling for Pandos OS
+*
+* Brief: handle exception while executing
+*
+* Components:
+* - General Exception Handler: Routes exceptions to specific handlers
+* - System Call Handler: Processes 8 types of system calls
+* - Trap Handler: Handles program traps and privilege violations
+* - Semaphore Operations: P (wait) and V (signal) primitives
+*
+* Exception Types:
+* - Interrupts (case 0)
+* - TLB exceptions (cases 1-3) 
+* - Program traps (cases 4-7,9-12)
+* - System calls (case 8)
+*
+* Dependencies:
+* - curr_proc: Currently executing process
+* - device_sem: Device semaphore array
+* - ready_queue: Queue of ready processes
+*****************************************************************************/
+
 #include "../h/exceptions.h"
 #include "../h/initial.h"
 #include "../h/scheduler.h"
