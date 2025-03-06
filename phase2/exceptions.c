@@ -1,5 +1,5 @@
 /******************************* EXCEPTIONS.c *********************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Exception and system call handling for Pandos OS
 *
 * Brief: Handle 2 types of exception while executing: 

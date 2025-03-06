@@ -78,6 +78,7 @@ typedef unsigned int devregtr;
 #define NOLEAVES		4	/* number of leaves of p8 process tree */
 #define MAXSEM			20
 
+
 SEMAPHORE term_mut=1,	/* for mutual exclusion on terminal */
 		s[MAXSEM+1],	/* semaphore array */
 		testsem=0,		/* for a simple test */
@@ -121,14 +122,13 @@ void print(char *msg) {
 	char *s = msg;
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
-	SYSCALL(PASSERN, (int)&term_mut, 0, 0);			/* P(term_mut) */
+	
+	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		status = SYSCALL(WAITIO, TERMINT, 0, 0);
+		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
 		if ((status & TERMSTATMASK) != RECVD)
-		{
 			PANIC();
-		}
 		s++;	
 	}
 	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);				/* V(term_mut) */
@@ -138,22 +138,14 @@ void print(char *msg) {
 /* TLB-Refill Handler */
 /* One can place debug calls here, but not calls to print */
 void uTLB_RefillHandler () {
+		
 	setENTRYHI(0x80000000);
 	setENTRYLO(0x00000000);
 	TLBWR();	
+	
 	LDST ((state_PTR) 0x0FFFF000);
 }
 
-
-
-
-void debug(int param1, int param2, int param3, int param4)
-{
-    int a = 0;
-    a--;
-    int b = a-1;
-	return;
-}
 
 /*********************************************************************/
 /*                                                                   */
@@ -162,6 +154,7 @@ void debug(int param1, int param2, int param3, int param4)
 void test() {	
 	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
+
 	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */
@@ -244,38 +237,44 @@ void test() {
 	
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
-	
+
 	print("p2 was started\n");
 
 	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);								/* V(startp2)   */
+
 	SYSCALL(PASSERN, (int)&endp2, 0, 0);								/* P(endp2)     */
+
 	/* make sure we really blocked */
 	if (p1p2synch == 0)
 		print("error: p1/p2 synchronization bad\n");
 
 	SYSCALL(CREATETHREAD, (int)&p3state, (int) NULL, 0);				/* start p3     */
-	
+
 	print("p3 is started\n");
+
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
+
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_pc =  (memaddr) p5gen;
-
-
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = p5Stack;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
-	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
-	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
-	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
-	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
 	
+	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
+
+	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
+
+	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
+
+	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
+
 	print("p1 knows p5 ended\n");
 
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);								/* P(blkp4)		*/
-	
+
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
 		creation = SYSCALL(CREATETHREAD, (int)&p8rootstate, (int) NULL, 0);
@@ -299,10 +298,10 @@ void test() {
 
 /* p2 -- semaphore and cputime-SYS test process */
 void p2() {
-	
 	int		i;				/* just to waste time  */
 	cpu_t	now1,now2;		/* times of day        */
 	cpu_t	cpu_t1,cpu_t2;	/* cpu time used       */
+
 	SYSCALL(PASSERN, (int)&startp2, 0, 0);				/* P(startp2)   */
 
 	print("p2 starts\n");
@@ -310,6 +309,7 @@ void p2() {
 	/* initialize all semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)
 		s[i] = 0;
+
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
 		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */
@@ -317,7 +317,7 @@ void p2() {
 		if (s[i] != 0)
 			print("error: p2 bad v/p pairs\n");
 	}
-	
+
 	print("p2 v's successfully\n");
 
 	/* test of SYS6 */
@@ -331,13 +331,10 @@ void p2() {
 
 	cpu_t2 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
 	STCK(now2);				/* time of day  */
-	
+
 	if (((now2 - now1) >= (cpu_t2 - cpu_t1)) &&
 			((cpu_t2 - cpu_t1) >= (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR)))))
-		{
-			print("p2 is OK\n");
-		}
-		
+		print("p2 is OK\n");
 	else  {
 		if ((now2 - now1) < (cpu_t2 - cpu_t1))
 			print ("error: more cpu time than real time\n");
@@ -348,8 +345,8 @@ void p2() {
 
 	p1p2synch = 1;				/* p1 will check this */
 
-	
 	SYSCALL(VERHOGEN, (int)&endp2, 0, 0);				/* V(endp2)     */
+
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p2 */
 
 	/* just did a SYS2, so should not get to this point */
@@ -366,7 +363,7 @@ void p3() {
 
 	time1 = 0;
 	time2 = 0;
-	
+
 	/* loop until we are delayed at least half of clock V interval */
 	while (time2-time1 < (CLOCKINTERVAL >> 1) )  {
 		STCK(time1);			/* time of day     */
@@ -392,7 +389,7 @@ void p3() {
 
 
 	SYSCALL(VERHOGEN, (int)&endp3, 0, 0);				/* V(endp3)        */
-	/*should have 2 procs in ready queue now*/
+
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p3    */
 
 	/* just did a SYS2, so should not get to this point */
@@ -414,7 +411,6 @@ void p4() {
 	}
 
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
-	/*print("second p4 blocked here by blkp4\n");*/
 
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);				/* P(blkp4)     */
 
@@ -478,7 +474,7 @@ void p5gen() {
 	default:
 		print("other program trap\n");
 	}
-
+	
 	LDST(&(pFiveSupport.sup_exceptState[GENERALEXCEPT]));
 }
 
@@ -527,7 +523,7 @@ void p5() {
 
 void p5a() {
 	/* generage a TLB exception after a TLB-Refill event */
-	
+
 	p5MemLocation = (memaddr *) 0x80000000;
 	*p5MemLocation = 42;
 }
@@ -536,9 +532,8 @@ void p5a() {
 /* should generate a program trap (Address error) */
 void p5b() {
 	cpu_t		time1, time2;
-	
+
 	SYSCALL(9, 0, 0, 0);
-	
 	SYSCALL(PASSERN, (int)&endp4, 0, 0);			/* P(endp4)*/
 
 	/* do some delay to be reasonably sure p4 and its offspring are dead */
@@ -549,8 +544,9 @@ void p5b() {
 		SYSCALL(WAITCLOCK, 0, 0, 0);
 		STCK(time2);
 	}
-	
+
 	/* if p4 and offspring are really dead, this will increment blkp4 */
+
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
 
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */

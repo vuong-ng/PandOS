@@ -1,5 +1,5 @@
 /******************************* SCHEDULER.c *********************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Process scheduling and dispatch for Pandos OS
 *
 * Brief: The Nucleus implement a simple preemptive round-robin 

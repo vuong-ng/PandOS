@@ -1,5 +1,5 @@
 /******************************* INTERRUPTS.h *********************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Interrupt handling declarations for Pandos OS
 *
 * External Functions:

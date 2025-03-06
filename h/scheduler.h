@@ -1,5 +1,5 @@
 /******************************* SCHEDULER.h *********************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Process scheduling declarations for Pandos OS
 *
 * Global Variables:

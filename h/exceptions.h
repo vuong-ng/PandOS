@@ -1,5 +1,5 @@
 /******************************* EXCEPTIONS.h *********************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Exception and system call handling declarations for Pandos OS
 *
 * Exception Handlers:

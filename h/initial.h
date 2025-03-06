@@ -1,5 +1,5 @@
 /******************************* INITIAL.h *************************************
-*
+* Written by Long Pham & Vuong Nguyen
 * Module: Global state and initialization declarations for Pandos OS
 *
 * Global Variables:
