@@ -62,7 +62,7 @@ void scheduler()
         /*If the Process Count is zero invoke the HALT BIOS service/instruction*/
             HALT();
 
-        if (process_cnt > 0 && softblock_cnt > 0)
+        if (softblock_cnt > 0)
         /*If the Process Count > 0 and the Soft-block Count > 0 enter a Wait State*/
         {
             setSTATUS((IECBITON | IMON) & TEBITOFF);        /*enable interrupts and disable PLT*/
@@ -70,9 +70,8 @@ void scheduler()
         }
 
         /*Deadlock for Pandos is defined as when the Process Count > 0 and the Soft-block Count is zero.*/
-        if (process_cnt > 0 && softblock_cnt == 0)
         /* when the Process Count > 0 and the Soft-block Count is zero, Deadlock detected*/
-            PANIC();
+        PANIC();
     }
 
     else

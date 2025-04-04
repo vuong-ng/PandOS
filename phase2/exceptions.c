@@ -161,24 +161,25 @@ void trapHandler()
 /* @return void                                 */
 /************************************************/
 void syscallHandler()
-{
-    /*check user/kernel mode and call trap handler if necessary*/
-    unsigned int status = ((state_t*) BIOSDATAPAGE)->s_status;
-
-    status = (status >> GETKUP) & CLEAR31MSB;                                  
-    /*get status code for syscall*/
-    
-    if (status == 1)                                                          
-    /*processor currently in user-mode, call trap handler*/
-    {
-        (((state_t*) BIOSDATAPAGE)->s_cause) &= CLEAREXCCODE;       /*Clear Cause.ExcCode*/
-        (((state_t*) BIOSDATAPAGE)->s_cause) |= EXCCODERI;       /*set Cause.ExcCode to 10 - RI*/
-        trapHandler();
-    }
-        
+{       
     int a0 = ((state_t*) BIOSDATAPAGE)->s_a0;
-    increasePC(); 
+    if(a0 >= CREATETHREAD && a0 <= GETSPTPTR)  /*check user/kernel mode and call trap handler if necessary if syscall 1-8*/
+    {
+        unsigned int status = ((state_t*) BIOSDATAPAGE)->s_status;
+        status = (status >> GETKUP) & CLEAR31MSB;                                  
+        /*get status code for syscall*/
+        
+        if (status == USER)                                                          
+        /*processor currently in user-mode, call trap handler*/
+        {
+            (((state_t*) BIOSDATAPAGE)->s_cause) &= CLEAREXCCODE;       /*Clear Cause.ExcCode*/
+            (((state_t*) BIOSDATAPAGE)->s_cause) |= EXCCODERI;       /*set Cause.ExcCode to 10 - RI*/
+            trapHandler();
+        }
+    }
+    /*not syscall 1-8, no need to check user/kernel*/
 
+    increasePC(); 
     switch (a0)
     {
     /*Create Process (SYS1)*/
@@ -189,12 +190,12 @@ void syscallHandler()
 
         if (new_proc == NULL){
             /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
-            curr_proc->p_s.s_v0 = -1;
+            curr_proc->p_s.s_v0 = ERROR;
         }
         else 
         {
             /*if new process is not NULL, put 0 into v0*/
-            curr_proc->p_s.s_v0 = 0;
+            curr_proc->p_s.s_v0 = SUCCESS;
 
             copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); 
             /*copy saved exception state into the new process state*/
@@ -245,7 +246,10 @@ void syscallHandler()
             
         /*else: call Passeren operation to block process on ASL*/
         else
+        {
             Passeren(semAdd);
+            scheduler();            /* Schedule next process */
+        }
         break;
     }
         
@@ -253,7 +257,7 @@ void syscallHandler()
     case VERHOGEN:
     {
         /*Call Verhogen() to increment semaphore and wake process*/
-        Verhogen(((state_t*) BIOSDATAPAGE)->s_a1);
+        pcb_PTR unblocked_pcb = Verhogen(((state_t*) BIOSDATAPAGE)->s_a1);
             
         /*return control to current process*/
         syscallReturnToCurr();
@@ -282,6 +286,8 @@ void syscallHandler()
             
         /* block process on device semaphore, wait for device interrupts */
         Passeren(device_semAdd);
+        softblock_cnt++;        /* Increment blocked process count */
+        scheduler();            /* Schedule next process */
         break;
     }
         
@@ -304,6 +310,8 @@ void syscallHandler()
     {
         /*performs P on pseudo-clock semaphore to block the process on the ASL*/
         Passeren(&device_sem[PSEUDOCLK]);
+        softblock_cnt++;        /* Increment blocked process count */
+        scheduler();            /* Schedule next process */
         break;
     }
         
@@ -390,8 +398,8 @@ void killProcess(pcb_PTR proc)
         {
             (*proc->p_semAdd)++;
             outBlocked(proc);
-            softblock_cnt--;
         }
+        /*else softblock_cnt--;*/
     }
     else {    
         /* Remove from ready queue if not blocked */
@@ -461,13 +469,7 @@ void Passeren(int* semAdd)
     /*Update the accumulated CPU time for the Current Process before it is blocked*/
     updateTime(curr_proc);
 
-    if(insertBlocked(semAdd, curr_proc) == FALSE)  /*blocked successfully*/
-    {
-        softblock_cnt++;        /* Increment blocked process count */
-        scheduler();            /* Schedule next process */
-    }
-    else /* can't block due to lack of available semaphore, stop */
-        PANIC();
+    insertBlocked(semAdd, curr_proc);
 }
 
 /*************************************************/
@@ -499,7 +501,6 @@ pcb_PTR Verhogen(int* semAdd)
         if(removed != NULL)
         {
             insertProcQ(&ready_queue, removed);     /* Add to ready queue */
-            softblock_cnt--;                        /* Decrease blocked count */
         }
     }
     return removed;

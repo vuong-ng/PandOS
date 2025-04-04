@@ -10,6 +10,7 @@
 /*bit manipulation constants*/
 #define IEPBITON		0x00000004
 #define IECBITON        0x00000001
+#define KUCBITON        0x2
 #define KUPBITON		0x00000008
 #define KUPBITOFF		0xFFFFFFF7
 #define TEBITON			0x08000000
@@ -42,6 +43,7 @@
 
 
 /* timer, timescale, TOD-LO and other bus regs */
+#define SWAPPOOLADDR    0x20000000 + (32 * PAGESIZE)  /*assume Pandos code occupies no more than 32 frames*/
 #define RAMBASEADDR		0x10000000
 #define RAMBASESIZE		0x10000004
 #define TODLOADDR		0x1000001C
@@ -54,6 +56,10 @@
 
 
 /* utility constants */
+#define ERROR               -1
+#define SUCCESS             0
+#define KERNEL              0
+#define USER                1
 #define ON                  1
 #define OFF                 0
 #define	TRUE			    1
@@ -107,6 +113,8 @@
 #define ACK				    1
 
 /* Memory related constants */
+#define TEXTSTART       0x800000B0
+#define KUSEGSTACK      0xC0000000
 #define KSEG0           0x00000000
 #define KSEG1           0x20000000
 #define KSEG2           0x40000000

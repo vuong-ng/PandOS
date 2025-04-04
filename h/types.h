@@ -100,6 +100,18 @@ typedef struct state_t {
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
 
+/*VM types*/
+typedef struct pte_t {
+    unsigned int EntryHi;
+    unsigned int EntryLo;
+} pte_t;
+
+typedef struct swap_frame_t {
+    int asid;
+    int vpn;
+    pte_t* matching_pte_ptr;
+} swap_frame_t;
+
 
 /* process context */
 typedef struct context_t {
@@ -113,7 +125,15 @@ typedef struct support_t {
 	int 		sup_asid; /* Process Id (asid) */
 	state_t 	sup_exceptState[2]; /* stored excpt states */
 	context_t 	sup_exceptContext[2]; /* pass up contexts */
+
+	/*array of 32 Page Table entries. Each Page Table entry is a doubleword consisting of an EntryHi and an EntryLo portion.*/
+	pte_t sup_privatePgTbl[32];
+	int sup_stackTLB[500];  		/*stack area for the process’s TLB exception handler*/
+	int sup_stackGen[500];			/*stack area for the process’s Support Level general exception handler*/
 } support_t;
+
+
+
 
 
 

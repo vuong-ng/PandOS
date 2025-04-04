@@ -34,10 +34,10 @@ extern void generalExceptionHandler();
 extern void uTLB_RefillHandler();
 /* Handles TLB refill events from BIOS */
 
-extern void syscallHandler();
+/*extern void syscallHandler();*/
 /* Processes 8 types of system calls (SYS1-SYS8) */
 
-extern void trapHandler();
+/*extern void trapHandler();*/
 /* Handles program traps by passing up or terminating */
 
 extern void passUpOrDie(int passup_type);

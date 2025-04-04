@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "initial.h": "c"
+        "initial.h": "c",
+        "initproc.h": "c",
+        "vmsupport.h": "c"
     }
 }
