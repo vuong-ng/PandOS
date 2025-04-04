@@ -190,12 +190,15 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
         
     /*perform V on Nucleus maintained semaphore of this device*/
     pcb_PTR unblocked_pcb = Verhogen(device_semAdd);
-    if(unblocked_pcb != NULL)
-        softblock_cnt--;                        /* Decrease blocked count */
 
-   
+
+    
     if(unblocked_pcb != NULL)
     {
+        if(curr_proc != NULL)
+            softblock_cnt--;                        /* Decrease blocked count */
+
+
         unblocked_pcb->p_s.s_v0 = saved_status;  
         /*place saved off status code into the new unblocked pcb's v0 reg*/
 
