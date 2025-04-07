@@ -2,6 +2,7 @@
     "files.associations": {
         "initial.h": "c",
         "initproc.h": "c",
-        "vmsupport.h": "c"
+        "vmsupport.h": "c",
+        "syssupport.h": "c"
     }
 }

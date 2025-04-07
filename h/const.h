@@ -72,6 +72,7 @@
 #define GETEXCCODE          2
 #define GETKUP              3
 #define GETINTLINE          8
+#define SETCMDBLKNO            8
 
 
 #define NULL 			    ((void *)0xFFFFFFFF)
@@ -136,6 +137,11 @@
 #define	GETCPUTIME		6	/* get cpu time used to date */
 #define	WAITCLOCK		7	/* delay on the clock semaphore */
 #define	GETSPTPTR		8	/* return support structure ptr. */
+#define TERMINATE       9
+#define GET_TOD         10
+#define WRITEPRINTER    11
+#define WRITETERMINAL   12
+#define READTERMINAL    13
 
 /*Interrupting Devices Bitmap*/
 #define INTERRUPTLINEBASE 0x10000040

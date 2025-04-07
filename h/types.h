@@ -128,8 +128,8 @@ typedef struct support_t {
 
 	/*array of 32 Page Table entries. Each Page Table entry is a doubleword consisting of an EntryHi and an EntryLo portion.*/
 	pte_t sup_privatePgTbl[32];
-	int sup_stackTLB[500];  		/*stack area for the process’s TLB exception handler*/
-	int sup_stackGen[500];			/*stack area for the process’s Support Level general exception handler*/
+	int* sup_stackTLB;  		/*stack area for the process’s TLB exception handler*/
+	int* sup_stackGen;			/*stack area for the process’s Support Level general exception handler*/
 } support_t;
 
 

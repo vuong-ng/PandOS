@@ -6,6 +6,7 @@
 
 #include "initial.h"
 #include "vmSupport.h"
+#include "sysSupport.h"
 
 #define PFN  12
 #define ASID 6
@@ -29,6 +30,11 @@
 #define PAGETABLESIZE 32
 
 extern void test();
+extern int mutex_device_sem[DEVSEMNO];
+
+extern void disableInterrupts();
+extern void enableInterrupts();
+
 
 
 #endif

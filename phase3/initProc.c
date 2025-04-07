@@ -1,6 +1,12 @@
-#include "initProc.h"
+#include "../h/initProc.h"
 
-static support_t uproc_support [UPROCMAX];
+HIDDEN support_t uproc_support [UPROCMAX + 1];
+HIDDEN int halt_sem = 0;
+
+int mutex_device_sem[DEVSEMNO];
+
+void disableInterrupts(){setSTATUS(getSTATUS() & ~IECBITON);}
+void enableInterrupts(){setSTATUS(getSTATUS() | IECBITON);}
 
 void test()
 {
@@ -8,34 +14,37 @@ void test()
     initSwapStructs();
 
     /*initialize device semaphores*/
-    int i = 0;
+    int i;
     for(i = 0; i < DEVSEMNO; i++)   
-        device_sem[i] = 1;
+        mutex_device_sem[i] = 1;
 
 
     /*launching UProcs*/
-    for(i = 0; i < UPROCMAX; i++)
+    for(i = 1; i <= UPROCMAX; i++)
     {
         /*initialize the process state*/
         state_t uproc_state;
         uproc_state.s_pc = TEXTSTART;
         uproc_state.s_t9 = TEXTSTART;
         uproc_state.s_sp = KUSEGSTACK;               
-        uproc_state.s_status | TEBITON | IECBITON | IMON | KUCBITON; /*user-mode with all interrupts and the processor Local Timer enabled*/
-        uproc_state.s_entryHI & ALLOFF | (i << ASID);                   /*EntryHi.ASID set to the process’s unique ID*/
+        uproc_state.s_status = ALLOFF | TEBITON | IECBITON | IMON | KUCBITON; /*user-mode with all interrupts and the processor Local Timer enabled*/
+        uproc_state.s_entryHI = ALLOFF | (i << ASID);                   /*EntryHi.ASID set to the process’s unique ID*/
 
         /*initialize the support structure*/
         uproc_support[i].sup_asid = i;
 
-        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) /*TLB handler addr.*/;
-        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) /*General excp handler addr.*/;
+        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) pager;   /*TLB handler addr.*/
+        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) sptGeneralExceptionHandler; /*General excp handler addr.*/
         /*kernel-mode with all interrupts and the Processor Local Timer enabled.*/
-        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IMON | IECBITON | TEBITON & ~KUCBITON;
-        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IMON | IECBITON | TEBITON & ~KUCBITON;
+        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IMON | IECBITON | TEBITON;
+        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IMON | IECBITON | TEBITON;
 
         /*utilize the two stack spaces allocated in the Support Structure*/
-        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackTLB[499]);
+        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackTLB[499]);  /*not sure*/
         uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackGen[499]);
+
+
+
 
         /*initialize process's page table*/
         int j;
@@ -56,15 +65,18 @@ void test()
     }
 
 
-    /*terminate*/
+    /*terminate (PANIC)*/
+    SYSCALL(PASSERN, &halt_sem, 0, 0);
+
 
 }
 
 
 void uTLB_RefillHandler()
 {
-    int page_number_missing = ((((state_t*) BIOSDATAPAGE)->s_entryHI) >> PFN) & GET20LSB;
-    pte_t pte = curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing - VPNSHIFT];
+    debug(0,1,2,3);
+    unsigned int page_number_missing = ((((state_t*) BIOSDATAPAGE)->s_entryHI) >> PFN);
+    pte_t pte = curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % PAGETABLESIZE];
 
     setENTRYHI(pte.EntryHi);          
     setENTRYLO(pte.EntryLo);  
