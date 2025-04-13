@@ -8,11 +8,99 @@
     "devices": {
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/asciiArt.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
+        },
+        "flash1": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/timeOfDay.umps"
+        },
+        "flash2": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/fibEleven.umps"
+        },
+        "flash3": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/strConcat.umps"
+        },
+        "flash4": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalReader.umps"
+        },
+        "flash5": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/printerTest.umps"
+        },
+        "flash6": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/fibSeven.umps"
+        },
+        "flash7": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest8.umps"
+        },
+        "printer0": {
+            "enabled": true,
+            "file": "print0.umps"
+        },
+        "printer1": {
+            "enabled": true,
+            "file": "print1.umps"
+        },
+        "printer2": {
+            "enabled": true,
+            "file": "print2.umps"
+        },
+        "printer3": {
+            "enabled": true,
+            "file": "print3.umps"
+        },
+        "printer4": {
+            "enabled": true,
+            "file": "print4.umps"
+        },
+        "printer5": {
+            "enabled": true,
+            "file": "print5.umps"
+        },
+        "printer6": {
+            "enabled": true,
+            "file": "print6.umps"
+        },
+        "printer7": {
+            "enabled": true,
+            "file": "print7.umps"
         },
         "terminal0": {
             "enabled": true,
             "file": "term0.umps"
+        },
+        "terminal1": {
+            "enabled": true,
+            "file": "term1.umps"
+        },
+        "terminal2": {
+            "enabled": true,
+            "file": "term2.umps"
+        },
+        "terminal3": {
+            "enabled": true,
+            "file": "term3.umps"
+        },
+        "terminal4": {
+            "enabled": true,
+            "file": "term4.umps"
+        },
+        "terminal5": {
+            "enabled": true,
+            "file": "term5.umps"
+        },
+        "terminal6": {
+            "enabled": true,
+            "file": "term6.umps"
+        },
+        "terminal7": {
+            "enabled": true,
+            "file": "term7.umps"
         }
     },
     "execution-rom": "/usr/share/umps3/exec.rom.umps",

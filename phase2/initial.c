@@ -27,6 +27,12 @@
 #include "../h/exceptions.h"
 #include "../h/scheduler.h"
 
+void debug(int a, int b, int c, int d){
+    int ahga = 0;
+    int agjhao = ahga + 10;
+    ahga++;
+}
+
 int process_cnt;        /*number of started, but not yet terminated processes*/
 int softblock_cnt;      /*number of started, but not terminated processes that in are the “blocked” state due to an I/O or timer request*/
 pcb_PTR ready_queue;    /*tail pointer to a queue of pcbs that are in the “ready” state*/

@@ -8,6 +8,9 @@
 #include "vmSupport.h"
 #include "sysSupport.h"
 
+#define UPROCMAX 8
+
+
 #define PFN  12
 #define ASID 6
 #define D       0x400
@@ -35,6 +38,7 @@ extern int mutex_device_sem[DEVSEMNO];
 extern void disableInterrupts();
 extern void enableInterrupts();
 
+extern int masterSemaphore;
 
 
 #endif

@@ -190,12 +190,12 @@ void syscallHandler()
 
         if (new_proc == NULL){
             /* new_proc == NULL -> insufficient resources, put error code -1 in v0*/
-            curr_proc->p_s.s_v0 = ERROR;
+            ((state_t*) BIOSDATAPAGE)->s_v0 = ERROR;
         }
         else 
         {
             /*if new process is not NULL, put 0 into v0*/
-            curr_proc->p_s.s_v0 = SUCCESS;
+            ((state_t*) BIOSDATAPAGE)->s_v0 = SUCCESS;
 
             copyState(&(new_proc->p_s), ((state_t*) BIOSDATAPAGE)->s_a1); 
             /*copy saved exception state into the new process state*/
@@ -310,7 +310,7 @@ void syscallHandler()
     {
         /*performs P on pseudo-clock semaphore to block the process on the ASL*/
         Passeren(&device_sem[PSEUDOCLK]);
-        softblock_cnt++;        /* Increment blocked process count */
+        softblock_cnt++;        /* Increment blocked process count (AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)*/
         scheduler();            /* Schedule next process */
         break;
     }
@@ -486,7 +486,7 @@ void Passeren(int* semAdd)
 /*************************************************/
 pcb_PTR Verhogen(int* semAdd)
 {
-    pcb_PTR removed;
+    pcb_PTR removed = NULL;
 
     /* Increment semaphore value */
     (*semAdd)++;
@@ -602,4 +602,21 @@ void copyState(state_t* dest, state_t* src)
 void syscallReturnToCurr()
 {
     LDST((state_t*) BIOSDATAPAGE);
+}
+
+
+
+
+
+void uTLB_RefillHandler()
+{
+    unsigned int page_number_missing = ((((state_t*) BIOSDATAPAGE)->s_entryHI) >> 12);
+    pte_t* pte = &(curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]);
+
+    setENTRYHI((curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]).EntryHi);          
+    setENTRYLO((curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]).EntryLo);  
+    TLBWR();
+
+    LDST((state_t*) BIOSDATAPAGE);
+
 }

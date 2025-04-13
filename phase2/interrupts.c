@@ -146,7 +146,7 @@ int getPendingDevice(memaddr* int_line_bitmap)
 /* Returns: void                                  */
 /*************************************************/
 void nonTimerInterruptHandler(int interrupt_line, int dev_no)
-{
+{   
     STCK(time_start); 
     /*store time spent in interrupt handling*/
 
@@ -191,11 +191,10 @@ void nonTimerInterruptHandler(int interrupt_line, int dev_no)
     /*perform V on Nucleus maintained semaphore of this device*/
     pcb_PTR unblocked_pcb = Verhogen(device_semAdd);
 
-
     
     if(unblocked_pcb != NULL)
     {
-        if(curr_proc != NULL)
+        /*if(curr_proc != NULL)*/
             softblock_cnt--;                        /* Decrease blocked count */
 
 
@@ -280,7 +279,7 @@ void IntervalTimerInterruptHandler()
     {
         /* Add each blocked process to ready queue */
         insertProcQ(&ready_queue, p);
-        softblock_cnt--;             /* Decrement blocked count */
+        softblock_cnt--;             /* Decrement blocked count (AAAAAAAAAAAAAAAAAAAA) */
     }
 
     /*reset pseudo-clock semaphore to 0*/

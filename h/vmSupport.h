@@ -1,7 +1,6 @@
 #ifndef VMSUPPORT
 #define VMSUPPORT
 
-#define UPROCMAX 8
 
 #include "initial.h"
 #include "const.h"

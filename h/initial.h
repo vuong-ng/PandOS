@@ -29,4 +29,7 @@ extern pcb_PTR ready_queue; /*tail pointer to a queue of pcbs that are in the �
 extern pcb_PTR curr_proc;   /*pointer to the pcb that is in the “running” state, i.e. the current executing process.*/
 extern int device_sem [DEVSEMNO]; /*array of device semaphores*/
 
+
+extern void debug(int a, int b, int c, int d);
+
 #endif

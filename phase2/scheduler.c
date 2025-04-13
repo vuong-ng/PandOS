@@ -65,10 +65,9 @@ void scheduler()
         if (softblock_cnt > 0)
         /*If the Process Count > 0 and the Soft-block Count > 0 enter a Wait State*/
         {
-            setSTATUS((IECBITON | IMON) & TEBITOFF);        /*enable interrupts and disable PLT*/
+            setSTATUS(((IECBITON | IMON) & TEBITOFF));        /*enable interrupts and disable PLT*/
             WAIT();  
         }
-
         /*Deadlock for Pandos is defined as when the Process Count > 0 and the Soft-block Count is zero.*/
         /* when the Process Count > 0 and the Soft-block Count is zero, Deadlock detected*/
         PANIC();

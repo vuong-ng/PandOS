@@ -41,7 +41,7 @@ EF = umps3-elf2umps
 UDEV = umps3-mkdev
 
 #main target
-all: kernel.core.umps 
+all: kernel.core.umps devices
 
 kernel.core.umps: kernel
 	$(EF) -k kernel
@@ -59,3 +59,9 @@ clean:
 
 distclean: clean
 	-rm kernel.*.umps tape0.umps
+
+PRINTERS = print0.umps print1.umps print2.umps print3.umps print4.umps print5.umps print6.umps print7.umps
+TERMINALS = term0.umps term1.umps term2.umps term3.umps term4.umps term5.umps term6.umps term7.umps
+devices: $(PRINTERS) $(TERMINALS)
+%.umps:
+	touch $@ 
