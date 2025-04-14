@@ -75,9 +75,6 @@ void test()
     
     SYSCALL(TERMINATETHREAD, 0, 0, 0);
 
-    /*terminate (PANIC)*/
-    SYSCALL(PASSERN, &halt_sem, 0, 0);
-    debug(69,69,69,69);
 }
 
 

@@ -22,6 +22,6 @@ void main() {
 
 		
 	/* Terminate normally */	
-	SYSCALL(TERMINATE, 0, 0, 0);
+	SYSCALL(TERMINATE, 0, 0, 0); 
 }
 

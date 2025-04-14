@@ -613,8 +613,8 @@ void uTLB_RefillHandler()
     unsigned int page_number_missing = ((((state_t*) BIOSDATAPAGE)->s_entryHI) >> 12);
     pte_t* pte = &(curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]);
 
-    setENTRYHI((curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]).EntryHi);          
-    setENTRYLO((curr_proc->p_supportStruct->sup_privatePgTbl[page_number_missing % 32]).EntryLo);  
+    setENTRYHI(pte->EntryHi);          
+    setENTRYLO(pte->EntryLo);  
     TLBWR();
 
     LDST((state_t*) BIOSDATAPAGE);

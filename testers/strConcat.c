@@ -20,7 +20,7 @@ void main() {
 	
 	print(WRITETERMINAL, "\n");
 	print(WRITETERMINAL, "Enter another string: ");
-
+ 
 	status2 = SYSCALL(READTERMINAL, (int)&buf2[0], 0, 0);
 	buf2[status2] = EOS;
 

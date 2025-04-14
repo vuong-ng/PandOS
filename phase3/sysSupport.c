@@ -6,7 +6,6 @@ void sptGeneralExceptionHandler()
     support_t* sPtr = SYSCALL(GETSPTPTR, 0, 0, 0);
 
     unsigned int cause = sPtr->sup_exceptState[GENERALEXCEPT].s_cause;
-    debug(36, (cause >> GETEXCCODE) & CLEAR26MSB, sPtr->sup_exceptState[GENERALEXCEPT].s_a0, 1);
 
     switch ((cause >> GETEXCCODE) & CLEAR26MSB)
     {
@@ -24,18 +23,10 @@ void sptGeneralExceptionHandler()
 
 }
 
-void sptTrapHandler(support_t* sPtr, int* swap_pool_sem)
-{
-
-   terminate(sPtr, swap_pool_sem);
-
-}
-
 void terminate(support_t* sPtr, int* swap_pool_sem)
 {
     SYSCALL(VERHOGEN, &masterSemaphore, 0, 0);
 
-    debug(sPtr->sup_asid,10,10,10);
     if(swap_pool_sem != NULL)
         SYSCALL(VERHOGEN, swap_pool_sem, 0, 0);
 
@@ -47,15 +38,27 @@ void terminate(support_t* sPtr, int* swap_pool_sem)
         if(i != (TERMINT - 3) * DEVPERINT)
         {
             if(mutex_device_sem[i + dev_no] <= 0)  /*if device line i mutex of process is held*/
+            {
+                debug(2,3,4,5);
                 SYSCALL(VERHOGEN, &mutex_device_sem[i + dev_no], 0, 0);
+            }
+                
             i += DEVPERINT;
         }
         else
         {
             if(mutex_device_sem[i + dev_no * SUBDEVPERTERM + TERMWRITE] <= 0)
+            {
+                debug(6,7,8,9);
                 SYSCALL(VERHOGEN, &mutex_device_sem[i + dev_no * SUBDEVPERTERM + TERMWRITE], 0, 0);
+            }
+                
             if(mutex_device_sem[i + dev_no * SUBDEVPERTERM + TERMREAD] <= 0)
+            {
+                debug(9,10,11,12);
                 SYSCALL(VERHOGEN, &mutex_device_sem[i + dev_no * SUBDEVPERTERM + TERMREAD], 0, 0);
+            }
+                
             all_mutexes_checked = 1;
         }
     }
@@ -63,7 +66,20 @@ void terminate(support_t* sPtr, int* swap_pool_sem)
     SYSCALL(TERMINATETHREAD, 0, 0, 0);
 }
 
+void sptTrapHandler(support_t* sPtr, int* swap_pool_sem)
+{
+    terminate(sPtr, swap_pool_sem);
+}
 
+int printerOperation(device_t* dev_reg, unsigned int dev_no, unsigned int data0, unsigned command)
+{
+    dev_reg->d_data0 = data0;
+    disableInterrupts();
+    dev_reg->d_command = command;
+    int status = SYSCALL(WAITIO, PRNTINT, dev_no, 0);
+    enableInterrupts();
+    return status;
+}
 
 void sptSyscallHandler(support_t* sPtr)
 {
@@ -78,7 +94,9 @@ void sptSyscallHandler(support_t* sPtr)
         }
         case GET_TOD:
         {
-            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = SYSCALL(GETCPUTIME, 0, 0, 0);
+            cpu_t tod;
+            STCK(tod);
+            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = tod;
             break;
         }
 
@@ -87,45 +105,30 @@ void sptSyscallHandler(support_t* sPtr)
         {
             char* str_VA = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;
             int str_length = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
-
-             /*address must lie in logical addr space*/
-            if (str_length <= 0 || str_length > 128 || str_VA < KUSEG)    
+            if (str_length < 0 || str_length > 128 || str_VA < KUSEG)    
                 terminate(sPtr, NULL);
-
-            int dev_no = sPtr->sup_asid - 1;     /*which printer determined by the process id*/
+            int dev_no = sPtr->sup_asid - 1;     
             device_t* printer_dev_reg = DEVREGBASE + (PRNTINT - 3) * DEVREGINTSCALE + dev_no * DEVREGDEVSCALE;
             int* mutex_printer_sem = &mutex_device_sem[(PRNTINT - 3) * DEVPERINT + dev_no];
-
-
             SYSCALL(PASSERN, mutex_printer_sem, 0, 0);
-            /*print each character*/
             int error = 0, printed = 0;
             while((printed < str_length) && (error == 0))
             {
-                printer_dev_reg->d_data0 = (unsigned int) (*str_VA);
-
-                disableInterrupts();
-                printer_dev_reg->d_command = PRINTCHR;
-                int status = SYSCALL(WAITIO, PRNTINT, dev_no, 0);
-                enableInterrupts();
-
-                if((status & 0xFF) != READY)
+                int status = printerOperation(printer_dev_reg, dev_no, *str_VA, PRINTCHR);
+                if(status != READY)
                 {
                     error = 1;
-                    printed = -(status & 0xFF);     /*negative of device's status*/
+                    printed = -status;    
                 }
-                    
                 else
                 {
                     printed++;
-                    str_VA++;   /*move 1 byte to next character*/
+                    str_VA++;   
                 }
-                
             }
             SYSCALL(VERHOGEN, mutex_printer_sem, 0, 0);
             sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = printed;
             break;
-
         }
 
         case WRITETERMINAL:
@@ -137,18 +140,17 @@ void sptSyscallHandler(support_t* sPtr)
             int str_length = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
             int status;
             
-
+            SYSCALL(PASSERN, mutex_termwrite_sem, 0, 0);
             device_t* termwrite_dev_reg = DEVREGBASE + (TERMINT - 3) * DEVREGINTSCALE + dev_no * DEVREGDEVSCALE;
             
 
             /*address must lie in logical addr space*/
-            if (str_length <= 0 || str_length > 128 || str_VA < KUSEG)    
+            if (str_length < 0 || str_length > 128 || str_VA < KUSEG)    
                 terminate(sPtr, NULL);
 
             
-            
             int written = 0, error = 0;
-            SYSCALL(PASSERN, mutex_termwrite_sem, 0, 0);
+            
             while((written < str_length) && (error == 0))
             {
                 
@@ -158,6 +160,7 @@ void sptSyscallHandler(support_t* sPtr)
                 enableInterrupts();
                 if((status & TERMSTATMASK) != CHARTRANSMITTED)
                 {
+                    
                     error = 1;
                     written = 0 - (status & 0xFF);  /*negative of device's status*/
                 }
@@ -176,22 +179,16 @@ void sptSyscallHandler(support_t* sPtr)
         }
         case READTERMINAL:
         {
-            debug(1,1,1,13);
-            int dev_no = sPtr->sup_asid - 1;     /*which printer determined by the process id*/
-
+            int dev_no = sPtr->sup_asid - 1; 
             int* mutex_termread_sem = &mutex_device_sem[(TERMINT - 3) * DEVPERINT + dev_no * SUBDEVPERTERM + TERMREAD];
-
             SYSCALL(PASSERN, mutex_termread_sem, 0, 0);
             char* str_addr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;
 
-             /*address must lie in logical addr space*/
             if (str_addr < KUSEG)    
                 terminate(sPtr, NULL);
             
             int status;
-        
             device_t* termread_dev_reg = DEVREGBASE + (TERMINT - 3) * DEVREGINTSCALE + dev_no * DEVREGDEVSCALE;
-            
             int read = 0, done = 0, error = 0;
             while (done == 0 && error == 0)                       
             {
@@ -228,6 +225,6 @@ void sptSyscallHandler(support_t* sPtr)
 
     /*return to current process*/
     sPtr->sup_exceptState[GENERALEXCEPT].s_pc += 4;  /*increase PC*/
-    LDST(&(sPtr->sup_exceptState[GENERALEXCEPT]));
+    LDST((state_t*) (&(sPtr->sup_exceptState[GENERALEXCEPT])));
 
 }

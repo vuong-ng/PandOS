@@ -108,7 +108,7 @@ typedef struct pte_t {
 
 typedef struct swap_frame_t {
     int asid;
-    int vpn;
+    unsigned int vpn;
     pte_t* matching_pte_ptr;
 } swap_frame_t;
 
@@ -128,8 +128,8 @@ typedef struct support_t {
 
 	/*array of 32 Page Table entries. Each Page Table entry is a doubleword consisting of an EntryHi and an EntryLo portion.*/
 	pte_t sup_privatePgTbl[32];
-	int sup_stackTLB [500];  		/*stack area for the process’s TLB exception handler*/
-	int sup_stackGen [500];			/*stack area for the process’s Support Level general exception handler*/
+	unsigned int sup_stackTLB [500];  		/*stack area for the process’s TLB exception handler*/
+	unsigned int sup_stackGen [500];			/*stack area for the process’s Support Level general exception handler*/
 } support_t;
 
 
