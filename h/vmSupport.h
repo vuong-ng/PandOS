@@ -6,7 +6,6 @@
 #include "const.h"
 #include "initProc.h"
 
-
 extern void initSwapStructs();
 extern void pager();
 

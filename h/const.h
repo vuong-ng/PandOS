@@ -36,10 +36,13 @@
 #define PSEUDOCLK 48
 
 #define MAXPROC 20
+#define UPROCMAX 8
+#define PAGETABLESIZE 32
 
 /* Hardware & software constants */
 #define PAGESIZE		  4096			/* page size in bytes	*/
 #define WORDLEN			  4				  /* word size in bytes	*/
+
 
 
 /* timer, timescale, TOD-LO and other bus regs */
@@ -73,6 +76,20 @@
 #define GETKUP              3
 #define GETINTLINE          8
 #define SETCMDBLKNO            8
+
+/* device commands & status */
+#define READBLK 0x2
+#define WRITEBLK 0x3
+#define PRINTCHR 0x2
+#define TRANSMITCHAR 0x2
+#define RECEIVECHAR 0x2
+
+#define CHARTRANSMITTED 0x5
+#define CHARRECEIVED 0x5
+
+#define MAXSTRLEN 128
+#define NEWLINE 0x0A
+#define GETCHAR 8
 
 
 #define NULL 			    ((void *)0xFFFFFFFF)
@@ -127,6 +144,20 @@
 #define DEVREGBASE      0x10000054
 #define DEVREGINTSCALE  0x80
 #define DEVREGDEVSCALE  0x10
+
+#define PAGESHIFT  12
+#define ASID       6
+#define D          0x400
+#define V          0x200
+#define G          0x100
+#define VPNSHIFT   0x80000
+#define STACKPGVPN 0xBFFFF
+#define STACKSIZE 500
+
+#define TLBMOD 1
+#define UNOCCUPIED -1
+
+
 
 /* system call codes */
 #define	CREATETHREAD	1	/* create thread */

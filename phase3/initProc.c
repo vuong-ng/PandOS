@@ -1,12 +1,7 @@
 #include "../h/initProc.h"
 
-
-
 HIDDEN support_t uproc_support [UPROCMAX + 1];
-
-
 int mutex_device_sem[DEVSEMNO];
-
 void disableInterrupts(){setSTATUS(getSTATUS() & (~IECBITON));}
 void enableInterrupts(){setSTATUS(getSTATUS() | IECBITON);}
 
@@ -15,7 +10,6 @@ int masterSemaphore;
 void test()
 {
     masterSemaphore = 0;
-    int halt_sem = 0;
     /*Initialize the Level 4/Phase 3 data structures*/
     initSwapStructs();
 
@@ -23,7 +17,6 @@ void test()
     int i;
     for(i = 0; i < DEVSEMNO; i++)   
         mutex_device_sem[i] = 1;
-
 
     /*launching UProcs*/
     for(i = 1; i <= UPROCMAX ; i++)
@@ -46,22 +39,20 @@ void test()
         uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IMON | IEPBITON | TEBITON;
 
         /*utilize the two stack spaces allocated in the Support Structure*/
-        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackTLB[499]);  
-        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackGen[499]);
-
-
+        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackTLB[STACKSIZE - 1]);  
+        uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackGen[STACKSIZE - 1]);
 
 
         /*initialize process's page table*/
         int j;
         for(j = 0; j < PAGETABLESIZE - 1; j++)
         {
-            uproc_support[i].sup_privatePgTbl[j].EntryHi = ALLOFF | ((VPNSHIFT + j) << PFN) | (i << ASID);
-            uproc_support[i].sup_privatePgTbl[j].EntryLo = ALLOFF | (D) /*& (~V) & (~G)*/;
+            uproc_support[i].sup_privatePgTbl[j].EntryHi = ALLOFF | ((VPNSHIFT + j) << PAGESHIFT) | (i << ASID);
+            uproc_support[i].sup_privatePgTbl[j].EntryLo = ALLOFF | (D) & (~V) & (~G);
         }
 
-        uproc_support[i].sup_privatePgTbl[PAGETABLESIZE - 1].EntryHi = ALLOFF | (STACKPGVPN << PFN) | (i << ASID);
-        uproc_support[i].sup_privatePgTbl[PAGETABLESIZE - 1].EntryLo = ALLOFF | (D) /*& (~V) & (~G)*/;
+        uproc_support[i].sup_privatePgTbl[PAGETABLESIZE - 1].EntryHi = ALLOFF | (STACKPGVPN << PAGESHIFT) | (i << ASID);
+        uproc_support[i].sup_privatePgTbl[PAGETABLESIZE - 1].EntryLo = ALLOFF | (D) & (~V) & (~G);
         /*VPN for the stack page set to starting address whose top end is 0xC000.0000 (SP)*/
 
 

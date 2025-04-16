@@ -8,35 +8,35 @@
     "devices": {
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest5.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/asciiArt.umps"
         },
         "flash1": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/asciiArt.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/fibEight.umps"
         },
         "flash2": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/timeOfDay.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest2.umps"
         },
         "flash3": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest3.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/strConcat.umps"
         },
         "flash4": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/swapStress1.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/swapStress.umps"
         },
         "flash5": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalReader.umps"
         },
         "flash6": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest4.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
         },
         "flash7": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest7.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/timeOfDay.umps"
         },
         "printer0": {
             "enabled": true,
