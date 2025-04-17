@@ -8,7 +8,7 @@
     "devices": {
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/asciiArt.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/isPrime.umps"
         },
         "flash1": {
             "enabled": true,
@@ -32,11 +32,11 @@
         },
         "flash6": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/swapStress2.umps"
         },
         "flash7": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/timeOfDay.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/twoSum.umps"
         },
         "printer0": {
             "enabled": true,

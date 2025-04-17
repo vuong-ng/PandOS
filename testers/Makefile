@@ -34,7 +34,7 @@ EF = umps3-elf2umps
 UDEV = umps3-mkdev
 
 #main target
-all: fizzBuzz.umps printerTest.umps strConcat.umps terminalReader.umps asciiArt.umps \
+all: isPrime.umps twoSum.umps printerTest.umps strConcat.umps terminalReader.umps asciiArt.umps \
 	fibSeven.umps fibEight.umps fibNine.umps fibTen.umps fibEleven.umps \
 	terminalTest1.umps terminalTest2.umps terminalTest3.umps terminalTest4.umps \
 	terminalTest5.umps terminalTest6.umps terminalTest7.umps terminalTest8.umps \
