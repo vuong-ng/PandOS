@@ -7,9 +7,10 @@
 * - Device Management: Mutex semaphores for devices
 *
 * Global State:
-* - uproc_support[UPROCMAX + 1]: Support structures array for user processes, plus 1 for sentinel 
+* - uproc_support[UPROCMAX + 1]: Support structures array for user processes, 
+*                                plus 1 for sentinel 
 * - mutex_device_sem[DEVSEMNO]: Device mutex semaphores
-* - masterSemaphore: master mutex semphore for phase 3
+* - masterSemaphore: master semphore for phase 3
 *********************************************************/
 
 #include "../h/initProc.h"
@@ -34,6 +35,7 @@ void disableInterrupts(){setSTATUS(getSTATUS() & (~IECBITON));}
 *********************************************************/
 void enableInterrupts(){setSTATUS(getSTATUS() | IECBITON);}
 
+/* initialize master semaphore*/
 int masterSemaphore;
 
 /*********************************************************
@@ -62,7 +64,7 @@ void test()
     for(i = 0; i < DEVSEMNO; i++)   
         mutex_device_sem[i] = 1;
 
-    /*launching 8 process run in user-mode - Uproc*/
+    /*launching 8 process run in user-mode, Uproc*/
     for(i = 1; i <= UPROCMAX ; i++)
     {
         /*initialize the Uproc state*/

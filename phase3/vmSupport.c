@@ -9,7 +9,7 @@
 * - Flash Operations: Perform reading and writing from/to flash device
 *
 * Global State:
-* - swap_pool_table[UPROCMAX * 2]: manage RAM frames
+* - swap_pool_table[UPROCMAX * 2]: manage swap pool entries
 * - swap_pool_sem: Semaphore guarantee mutual exclusion for swap pool access
 *
 * Core Functions:

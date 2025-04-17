@@ -1,6 +1,6 @@
 /******************************** SYSSUPPORT.C *********************************
 * Written by Long Pham & Vuong Nguyen
-* Module: General Syscall Support Functions for Pandos OS Phase 3
+* Module: General Syscall Support Level for Pandos OS Phase 3
 * 
 * Components:
 * - Exception Handling: Manages general exceptions and syscalls in Support level
@@ -13,7 +13,7 @@
 * - sptTrapHandler(): Handles program traps and errors
 *
 * Global State:
-* - masterSemaphore: Master semaphore for phase 3
+* - masterSemaphore: Master semaphore for phase 3 to grateful terminate test()
 *
 * Exception Types Handled:
 * - System calls (cause code 8)
