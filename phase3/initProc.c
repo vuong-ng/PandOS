@@ -90,8 +90,8 @@ void test()
         /*initialize context area*/
         /* set the PC of 2 exception:
         1. page fault exception's pc to the address of Support Level's TLB handler, 
-        2.general exception's pc to the addr of Support Level's general exception */
-        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) pager;                      /*TLB handler addr.*/
+        2. general exception's pc to the addr of Support Level's general exception */
+        uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) pager;                      /*TLB handler address*/
         uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) sptGeneralExceptionHandler; /*General exception handler address.*/
 
         /*Set the two Status registers to: kernel-mode with all interrupts and the Processor Local Timer enabled*/
@@ -124,7 +124,7 @@ void test()
         SYSCALL(CREATETHREAD, &uproc_state, &uproc_support[i], 0);
     }
 
-    /*test P mastersemaphore 8 times when all U-proc is launched*/
+    /*test P master semaphore 8 times when all U-proc is launched*/
     int t;
     for (t = 0; t < UPROCMAX; t++)
         SYSCALL(PASSERN, &masterSemaphore, 0, 0);
