@@ -130,6 +130,8 @@ typedef struct support_t {
 	pte_t sup_privatePgTbl[32];
 	unsigned int sup_stackTLB [500];  		/*stack area for the process’s TLB exception handler*/
 	unsigned int sup_stackGen [500];			/*stack area for the process’s Support Level general exception handler*/
+
+	int private_sem;
 } support_t;
 
 
@@ -166,6 +168,14 @@ typedef struct semd_t
     int            *s_semAdd;
     pcb_PTR         s_procQ;
 } semd_t;
+
+
+typedef struct delayd_t
+{
+	struct delayd_t* d_next;
+	int 			d_wakeTime;  /*time of day the uproc should be woken*/
+	support_t* 		d_supStruct;
+} delayd_t;
 
 
 #endif

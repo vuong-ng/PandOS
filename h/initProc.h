@@ -29,6 +29,8 @@
 #include "vmSupport.h"
 #include "sysSupport.h"
 
+#include "delayDaemon.h"
+
 /*test to initialize and launch u-proc*/
 extern void test();
 

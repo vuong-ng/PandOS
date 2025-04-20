@@ -36,7 +36,7 @@
 #define PSEUDOCLK 48
 
 #define MAXPROC 20
-#define UPROCMAX 8
+#define UPROCMAX 6
 #define PAGETABLESIZE 32
 
 /* Hardware & software constants */
@@ -173,6 +173,7 @@
 #define WRITEPRINTER    11
 #define WRITETERMINAL   12
 #define READTERMINAL    13
+#define DELAY           18
 
 /*Interrupting Devices Bitmap*/
 #define INTERRUPTLINEBASE 0x10000040

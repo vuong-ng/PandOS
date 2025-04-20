@@ -344,7 +344,7 @@ void sptSyscallHandler(support_t* sPtr)
             /*get the register of the terminal*/
             device_t* termwrite_dev_reg = DEVREGBASE + (TERMINT - 3) * DEVREGINTSCALE + dev_no * DEVREGDEVSCALE;    
             int written = 0, error = 0, status = 0;
-
+            
             /*write the string while transmitted string is less than the string length and the status after each read is "Character Transmitted" */
             while((written < str_length) && (error == 0))
             {
@@ -418,6 +418,16 @@ void sptSyscallHandler(support_t* sPtr)
             sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = read;
             break;
         }
+        case DELAY:
+        {
+            delay(sPtr);
+            break;
+        }
+        default:
+        {
+            sptTrapHandler(sPtr, NULL);
+        }
+
     }
 
     sPtr->sup_exceptState[GENERALEXCEPT].s_pc += 4;                 /*increase PC*/

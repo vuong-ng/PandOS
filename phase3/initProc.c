@@ -64,6 +64,9 @@ void test()
     for(i = 0; i < DEVSEMNO; i++)   
         mutex_device_sem[i] = 1;
 
+    /*initialize the Active Delay List (phase 5)*/
+    initADL();
+
     /*launching 8 process run in user-mode, Uproc*/
     for(i = 1; i <= UPROCMAX ; i++)
     {
@@ -102,6 +105,7 @@ void test()
         uproc_support[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackTLB[STACKSIZE - 1]);  
         uproc_support[i].sup_exceptContext[GENERALEXCEPT].c_stackPtr = &(uproc_support[i].sup_stackGen[STACKSIZE - 1]);
 
+        uproc_support[i].private_sem = 0;
 
         /*initialize process's page table*/
         int j;

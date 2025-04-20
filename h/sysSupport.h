@@ -17,6 +17,7 @@
 #define SYSSUPPORT
 
 #include "initProc.h"
+#include "delayDaemon.h"
 
 /* routes exceptions to appropriate handlers based on cause code */
 extern void sptGeneralExceptionHandler();

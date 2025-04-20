@@ -3,6 +3,7 @@
         "initial.h": "c",
         "initproc.h": "c",
         "vmsupport.h": "c",
-        "syssupport.h": "c"
+        "syssupport.h": "c",
+        "types.h": "c"
     }
 }
