@@ -1,9 +1,14 @@
 {
     "files.associations": {
+        "*.css": "tailwindcss",
         "initial.h": "c",
         "initproc.h": "c",
         "vmsupport.h": "c",
         "syssupport.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "array": "c",
+        "deque": "c",
+        "vector": "c",
+        "string_view": "c"
     }
 }
