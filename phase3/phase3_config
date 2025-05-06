@@ -16,23 +16,23 @@
         },
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/diskIOtest0.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/delayTest.umps"
         },
         "flash1": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/delayTest1.umps"
         },
         "flash2": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest2.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/delayTest2.umps"
         },
         "flash3": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest3.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/delayTest3.umps"
         },
         "flash4": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest4.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/delayTest4.umps"
         },
         "flash5": {
             "enabled": true,

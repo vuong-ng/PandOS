@@ -1,13 +1,13 @@
 #include "../h/delayDaemon.h"
 
+#define DUMMYHEADVAL -1
+#define DUMMYTAILVAL __INT_MAX__
+#define DAEMONASID 0
+#define MILLION	1000000
+
 HIDDEN delayd_t* delayd_h = NULL;
 HIDDEN delayd_t* delaydFree_h = NULL;
 HIDDEN int ADL_sem = 1;
-
-#define DUMMYHEADVAL -1
-#define DUMMYTAILVAL 0xFFFFFFFF
-#define DAEMONASID 0
-#define MILLION	1000000
 
 
 void insertADL(delayd_t* delayd)
@@ -16,7 +16,7 @@ void insertADL(delayd_t* delayd)
     delayd_t* curr = delayd_h->d_next;
 
     /*while not reached end of the ADL, and not in right order*/
-    while ((curr->d_wakeTime != DUMMYTAILVAL) && !(prev->d_wakeTime <= delayd->d_wakeTime)) 
+    while (!(prev->d_wakeTime <= delayd->d_wakeTime))
     {
         prev = prev->d_next;
         curr = curr->d_next;
