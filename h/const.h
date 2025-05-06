@@ -36,7 +36,7 @@
 #define PSEUDOCLK 48
 
 #define MAXPROC 20
-#define UPROCMAX 8
+#define UPROCMAX 4
 #define PAGETABLESIZE 32
 
 /* Hardware & software constants */
