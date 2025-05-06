@@ -36,7 +36,7 @@
 #define PSEUDOCLK 48
 
 #define MAXPROC 20
-#define UPROCMAX 6
+#define UPROCMAX 8
 #define PAGETABLESIZE 32
 
 /* Hardware & software constants */
@@ -90,6 +90,10 @@
 #define MAXSTRLEN 128
 #define NEWLINE 0x0A
 #define GETCHAR 8
+
+#define SEEKCYL 2
+#define DISKREADBLK 3
+#define DISKWRITEBLK 4
 
 
 #define NULL 			    ((void *)0xFFFFFFFF)
@@ -173,6 +177,10 @@
 #define WRITEPRINTER    11
 #define WRITETERMINAL   12
 #define READTERMINAL    13
+#define DISK_PUT        15
+#define DISK_GET        14
+#define FLASH_PUT       17
+#define FLASH_GET       16
 #define DELAY           18
 
 /*Interrupting Devices Bitmap*/

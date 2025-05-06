@@ -6,13 +6,21 @@
     "bootstrap-rom": "/usr/share/umps3/coreboot.rom.umps",
     "clock-rate": 1,
     "devices": {
+        "disk0": {
+            "enabled": true,
+            "file": "/Users/pham_l3/Documents/CS372_Project/phase3/disk0.umps"
+        },
+        "disk1": {
+            "enabled": false,
+            "file": "/Users/pham_l3/Documents/CS372_Project/phase3/disk0.umps"
+        },
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/isPrime.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/diskIOtest0.umps"
         },
         "flash1": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/fibEight.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest1.umps"
         },
         "flash2": {
             "enabled": true,
@@ -20,23 +28,23 @@
         },
         "flash3": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/strConcat.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest3.umps"
         },
         "flash4": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/swapStress.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest4.umps"
         },
         "flash5": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalReader.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest5.umps"
         },
         "flash6": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/swapStress2.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest6.umps"
         },
         "flash7": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/twoSum.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/terminalTest7.umps"
         },
         "printer0": {
             "enabled": true,
@@ -105,7 +113,7 @@
     },
     "execution-rom": "/usr/share/umps3/exec.rom.umps",
     "num-processors": 1,
-    "num-ram-frames": 512,
+    "num-ram-frames": 128,
     "symbol-table": {
         "asid": 64,
         "file": "kernel.stab.umps"

@@ -22,6 +22,14 @@
 
 #include "../h/sysSupport.h"
 
+#define MAXBLOCKMASK 0xFFFFFF
+
+void diskPut(support_t* sPtr);
+void diskGet(support_t* sPtr);
+void flashPut(support_t* sPtr);
+void flashGet(support_t* sPtr);
+
+
 /*********************************************************
 * Purpose: Routes exceptions to appropriate handlers based on cause
 * Parameters: None
@@ -74,8 +82,6 @@ void sptGeneralExceptionHandler()
 *********************************************************/
 void terminate(support_t* sPtr, int* swap_pool_sem)
 {
-    /* V the swap pool semaphore before terminate the Uproc*/
-    SYSCALL(VERHOGEN, &masterSemaphore, 0, 0);
 
     /*if the Uproc is currently holding the swap pool mutex sempahore, V the swap pool semaphore*/
     if(swap_pool_sem != NULL)
@@ -110,6 +116,32 @@ void terminate(support_t* sPtr, int* swap_pool_sem)
             all_mutexes_checked = 1;
         }
     }
+
+
+
+    /*disableInterrupts();
+	int i;
+	SYSCALL(PASSERN, &swap_pool_sem, 0, 0);
+	for(i = 0; i < UPROCMAX * 2; i++) {
+		if(swap_pool_table[i].asid == sPtr->sup_asid) {
+			swap_pool_table[i].asid = -1;
+			swap_pool_table[i].pgNo = 0;
+			swap_pool_table[i].matchingPgTableEntry = NULL;
+		}
+	}
+	SYSCALL(VERHOGEN, &swap_pool_sem, 0, 0);
+
+	for(i = 0; i < UPROCMAX * 2; i++) {
+		sPtr->sup_privatePgTbl[i].EntryLo &= ~V;
+	}
+    enableInterrupts();*/
+
+
+
+
+
+    /* V the swap pool semaphore before terminate the Uproc*/
+    SYSCALL(VERHOGEN, &masterSemaphore, 0, 0);
 
     /*terminate the uproc by calling syscall 2*/
     SYSCALL(TERMINATETHREAD, 0, 0, 0);
@@ -418,11 +450,32 @@ void sptSyscallHandler(support_t* sPtr)
             sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = read;
             break;
         }
+        case DISK_PUT:
+        {
+            diskPut(sPtr);
+            break;
+        }
+        case DISK_GET:
+        {
+            diskGet(sPtr);
+            break;
+        }
+        case FLASH_PUT:
+        {
+            flashPut(sPtr);
+            break;
+        }
+        case FLASH_GET:
+        {
+            flashGet(sPtr);
+            break;
+        }
         case DELAY:
         {
             delay(sPtr);
             break;
         }
+        
         default:
         {
             sptTrapHandler(sPtr, NULL);
@@ -432,4 +485,120 @@ void sptSyscallHandler(support_t* sPtr)
 
     sPtr->sup_exceptState[GENERALEXCEPT].s_pc += 4;                 /*increase PC*/
     LDST((state_t*) (&(sPtr->sup_exceptState[GENERALEXCEPT])));     /*return to current process*/
+}
+
+void memcpy(char* d, char* s, unsigned int size)
+{
+    int i;
+    for (i = 0; i < size; i++)
+        d[i] = s[i];
+}
+
+void diskPut(support_t* sPtr)
+{
+    /*get block from user space to dma buffer*/
+    int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;  /*put data at this address to DMA buffer first*/
+    int diskNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
+    int sectNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;
+
+    if (logicalAddr < KUSEG)    
+        terminate(sPtr, NULL);
+
+    int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2) + diskNo * PAGESIZE;
+
+    /*copy logicalAddr content to DMA_buffer*/
+    memcpy((char*) DMA_buffer, (char*) logicalAddr, PAGESIZE);
+
+
+    int seek_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, SEEKCYL);
+    if(seek_status != READY)
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -seek_status;
+    else
+    {
+        int write_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, DISKWRITEBLK);
+        if(write_status != READY)
+            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -write_status;
+        else
+            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = write_status;
+    }
+}
+
+
+void diskGet(support_t* sPtr)
+{
+    int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;  /*copy data at DMA to this location*/
+    int diskNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
+    int sectNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;
+
+    if (logicalAddr < KUSEG)    
+        terminate(sPtr, NULL);
+
+    int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2) + diskNo * PAGESIZE;
+
+    int seek_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, SEEKCYL);
+    if(seek_status != READY)
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -seek_status;
+    else
+    {
+        int read_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, DISKREADBLK);
+        if(read_status != READY)
+            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -read_status;
+        else
+            sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = read_status;
+    }
+
+
+    /*copy DMA_buffer content to logicalAddr*/
+    memcpy((char*) logicalAddr, (char*) DMA_buffer, PAGESIZE);
+}
+
+
+void flashPut(support_t* sPtr)
+{
+    int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1; 
+    int flashNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
+    int blockNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;    /*need check whether blockNo falls in range*/        
+
+    device_t* flash_dev_reg = DEVREGBASE + (FLASHINT - 3) * DEVREGINTSCALE + flashNo * DEVREGDEVSCALE;
+    unsigned int maxblock = flash_dev_reg->d_data1 & MAXBLOCKMASK;
+    if (logicalAddr < KUSEG || blockNo < 0 || blockNo > (maxblock-1))    
+        terminate(sPtr, NULL); 
+
+
+    /*copy logicalAddr content to DMA_buffer*/
+    int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2 + DEVPERINT * PAGESIZE) + flashNo * PAGESIZE ;
+    memcpy((char*) DMA_buffer, (char*) logicalAddr, PAGESIZE);
+
+
+    int status = flashOperation(flashNo, (memaddr) DMA_buffer, blockNo, WRITEBLK);
+    if(status != READY)
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -status;
+    else
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = status;
+
+}
+
+void flashGet(support_t* sPtr)
+{
+    int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1; 
+    int flashNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
+    int blockNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;
+
+
+    device_t* flash_dev_reg = DEVREGBASE + (FLASHINT - 3) * DEVREGINTSCALE + flashNo * DEVREGDEVSCALE;
+    unsigned int maxblock = flash_dev_reg->d_data1 & MAXBLOCKMASK;
+    if (logicalAddr < KUSEG || blockNo < 0 || blockNo > (maxblock-1))    
+        terminate(sPtr, NULL); 
+
+
+    int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2 + DEVPERINT * PAGESIZE) + flashNo * PAGESIZE;
+    int status = flashOperation(flashNo, (memaddr) DMA_buffer, blockNo, READBLK);
+    if(status != READY)
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -status;
+    else
+        sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = status;
+
+    /*copy DMA_buffer content to logicalAddr*/
+    memcpy((char*) logicalAddr, (char*) DMA_buffer, PAGESIZE);
+    
 }

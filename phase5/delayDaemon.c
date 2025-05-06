@@ -1,17 +1,22 @@
 #include "../h/delayDaemon.h"
 
-HIDDEN delayd_t* delayd_h;
-HIDDEN delayd_t* delaydFree_h;
+HIDDEN delayd_t* delayd_h = NULL;
+HIDDEN delayd_t* delaydFree_h = NULL;
 HIDDEN int ADL_sem = 1;
 
 #define DUMMYHEADVAL -1
-#define DUMMYTAILVAL 2147000000
+#define DUMMYTAILVAL 0xFFFFFFFF
+#define DAEMONASID 0
+#define MILLION	1000000
+
 
 void insertADL(delayd_t* delayd)
 {
     delayd_t* prev = delayd_h;
     delayd_t* curr = delayd_h->d_next;
-    while ((curr->d_wakeTime != DUMMYTAILVAL) && !(prev->d_wakeTime <= delayd->d_wakeTime))
+
+    /*while not reached end of the ADL, and not in right order*/
+    while ((curr->d_wakeTime != DUMMYTAILVAL) && !(prev->d_wakeTime <= delayd->d_wakeTime)) 
     {
         prev = prev->d_next;
         curr = curr->d_next;
@@ -22,72 +27,69 @@ void insertADL(delayd_t* delayd)
 
 delayd_t* allocateDelayd(support_t* sPtr, int wakeTime)
 {
+    /*take one from the free list*/
     delayd_t* freeDelayd = delaydFree_h;
     delaydFree_h = delaydFree_h->d_next;
 
     /*populate the delay descriptor*/
     cpu_t tod;
     STCK(tod);
-    freeDelayd->d_wakeTime = tod + wakeTime * 1000000;
+    freeDelayd->d_wakeTime = tod + wakeTime * MILLION;
     freeDelayd->d_supStruct = sPtr;
     return freeDelayd;
 }
 
+void deallocateDelayd(delayd_t* delayd)
+{
+    delayd->d_next = delaydFree_h;
+    delaydFree_h = delayd;
+}
+
+int ADLEmpty(delayd_t* delaydFree_h)
+{
+    return (delaydFree_h == NULL);
+}
+
 void delay(support_t* sPtr)
 {
-    /*support_t* sPtr = SYSCALL(GETSPTPTR, 0, 0, 0);*/
     int wakeTime = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;
+
+    /*Attempting to request a Delay for less than 0 seconds is an error and should result in the U-proc begin terminated*/
     if(wakeTime < 0)
         SYSCALL(TERMINATE, 0, 0, 0);
     
-    SYSCALL(PASSERN, &ADL_sem, 0, 0);
+    SYSCALL(PASSERN, &ADL_sem, 0, 0);   /*obtain mutual exclusion over the ADL*/
 
-    if (delaydFree_h == NULL) /*no delay descriptor available*/
+    if (ADLEmpty(delaydFree_h)) /*no delay descriptor available*/
     {
+        /*releasing mutual exclusion over the ADL and terminate*/
         SYSCALL(VERHOGEN, &ADL_sem, 0, 0);
         SYSCALL(TERMINATE, 0, 0, 0);
     }
 
     /*allocate 1 free delay descriptor from free list & populate the delay descriptor*/
-    /*delayd_t* freeDelayd = delaydFree_h;
-    delaydFree_h = delaydFree_h->d_next;
-    cpu_t tod;
-    STCK(tod);
-    freeDelayd->d_wakeTime = tod + wakeTime * 1000000;
-    freeDelayd->d_supStruct = sPtr;*/
     delayd_t* freeDelayd = allocateDelayd(sPtr, wakeTime);
 
     /*insert to ADL (sorted)*/
-    /*delayd_t* prev = delayd_h;
-    delayd_t* curr = delayd_h->d_next;
-    while ((curr->d_wakeTime != DUMMYTAILVAL) && !(prev->d_wakeTime <= freeDelayd->d_wakeTime))
-    {
-        prev = prev->d_next;
-        curr = curr->d_next;
-    }
-    prev->d_next = freeDelayd;
-    freeDelayd->d_next = curr;*/
     insertADL(freeDelayd);
 
-
     disableInterrupts();
-    SYSCALL(VERHOGEN, &ADL_sem, 0, 0);
-    SYSCALL(PASSERN, &(sPtr->private_sem), 0, 0);
+    SYSCALL(VERHOGEN, &ADL_sem, 0, 0);      /*release mutual exclusion over the ADL*/
+    SYSCALL(PASSERN, &(sPtr->private_sem), 0, 0);   /*block the executing Uproc on its private semaphore*/
     enableInterrupts();
 
     
-    /*LDST: executed inside support level syscall handler*/
+    /*return control (LDST) to the U-proc at the instruction immediately following the SYS18.*/
     LDST((state_t*) &(sPtr->sup_exceptState[GENERALEXCEPT]));
-    
 
 }
 
 void delayDaemon()
 {
-    while((1+1) == 2)
+    while(TRUE)
     {
-        SYSCALL(WAITCLOCK, 0, 0, 0);
-        SYSCALL(PASSERN, &ADL_sem, 0, 0);
+        SYSCALL(WAITCLOCK, 0, 0, 0);    /* wait for 100 milliseconds*/
+        SYSCALL(PASSERN, &ADL_sem, 0, 0);   /*gain mutual exclusion of the ADL*/
 
         delayd_t* prev = delayd_h;
         delayd_t* curr = delayd_h->d_next;
@@ -97,24 +99,27 @@ void delayDaemon()
             STCK(tod);
             if(tod >= curr->d_wakeTime)  /*wakeup time has passed*/
             {
-                SYSCALL(VERHOGEN, &(curr->d_supStruct->private_sem), 0, 0);
-                /*remove from ADL & return to free list*/
+                SYSCALL(VERHOGEN, &(curr->d_supStruct->private_sem), 0, 0); /*wake the process up*/
+
+                /*remove from ADL*/
                 prev->d_next = curr->d_next;
-                curr->d_next = delaydFree_h;
-                delaydFree_h = curr;
+
+                /*return to free list*/
+                deallocateDelayd(curr);
 
                 /*move pointer*/
                 curr = prev->d_next;
             }
             else
             {
+                /*move pointers*/
                 prev = prev->d_next;
                 curr = curr->d_next;
             }
             
         }
 
-        SYSCALL(VERHOGEN, &ADL_sem, 0, 0);
+        SYSCALL(VERHOGEN, &ADL_sem, 0, 0);  /*release mutual exclusion over the ADL*/
     }
     
 }
@@ -123,7 +128,7 @@ void initADL()
 {
     static delayd_t delaydTable[UPROCMAX + 2];
 
-    /*connect delayd*/
+    /*add each element from the static array of delay event descriptor nodes to the free list*/
     int i;
     for (i = 0; i < UPROCMAX + 2; i++)
     {
@@ -132,12 +137,14 @@ void initADL()
             delaydTable[i].d_next = &delaydTable[i + 1];
         }
         else{
-            /*set the last one s_next to NULL*/
+            /*set the last one d_next to NULL*/
             delaydTable[i].d_next = NULL;
         }
     }
 
-    delaydFree_h = &delaydTable[0];    /*point head point of free list to the delayd linked list*/
+    /*initialize the active list with two dummy nodes*/
+
+    delaydFree_h = &delaydTable[0];    /*point head of free list to the first delayd of static array*/
 
     /*create dummy head node*/
     delayd_h = delaydFree_h;
@@ -160,8 +167,8 @@ void initADL()
     state_t daemon_state;
     daemon_state.s_pc = (memaddr) delayDaemon;
     daemon_state.s_t9 = (memaddr) delayDaemon;
-    daemon_state.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE) ;   /*RAMTOP*/
-    daemon_state.s_status = ALLOFF | IEPBITON | IMON;
-    daemon_state.s_entryHI = (0 << ASID); 
+    daemon_state.s_sp = *((int*) RAMBASEADDR) + *((int*) RAMBASESIZE) - PAGESIZE ;   /*RAMTOP - (stack for test)*/
+    daemon_state.s_status = ALLOFF | IEPBITON | IMON;   /*kernel-mode with all interrupts enabled*/
+    daemon_state.s_entryHI = (DAEMONASID << ASID); 
     SYSCALL(CREATETHREAD, &daemon_state, NULL, 0);     
 }
