@@ -12,7 +12,7 @@
         },
         "flash0": {
             "enabled": true,
-            "file": "/Users/pham_l3/Documents/CS372_Project/testers/diskIOtest0.umps"
+            "file": "/Users/pham_l3/Documents/CS372_Project/testers/flashIOtest.umps"
         },
         "flash1": {
             "enabled": true,

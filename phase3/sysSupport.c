@@ -117,29 +117,6 @@ void terminate(support_t* sPtr, int* swap_pool_sem)
         }
     }
 
-
-
-    /*disableInterrupts();
-	int i;
-	SYSCALL(PASSERN, &swap_pool_sem, 0, 0);
-	for(i = 0; i < UPROCMAX * 2; i++) {
-		if(swap_pool_table[i].asid == sPtr->sup_asid) {
-			swap_pool_table[i].asid = -1;
-			swap_pool_table[i].pgNo = 0;
-			swap_pool_table[i].matchingPgTableEntry = NULL;
-		}
-	}
-	SYSCALL(VERHOGEN, &swap_pool_sem, 0, 0);
-
-	for(i = 0; i < UPROCMAX * 2; i++) {
-		sPtr->sup_privatePgTbl[i].EntryLo &= ~V;
-	}
-    enableInterrupts();*/
-
-
-
-
-
     /* V the swap pool semaphore before terminate the Uproc*/
     SYSCALL(VERHOGEN, &masterSemaphore, 0, 0);
 
@@ -487,6 +464,12 @@ void sptSyscallHandler(support_t* sPtr)
     LDST((state_t*) (&(sPtr->sup_exceptState[GENERALEXCEPT])));     /*return to current process*/
 }
 
+/*
+memcpy: helper function that copies size bytes of data 
+starting at s to address starting at d
+params: d, s, size
+return: none
+*/
 void memcpy(char* d, char* s, unsigned int size)
 {
     int i;
@@ -494,22 +477,32 @@ void memcpy(char* d, char* s, unsigned int size)
         d[i] = s[i];
 }
 
+/*
+diskPut: perform the disk write operation
+params: a pointer to the support struct passed from syscallhandler
+- get necessary parameters from the support struct
+- calculate the DMA_buffer address
+- copy contents from the specified address to the DMA buffer
+- perform an I/O operation to write data inside the DMA buffer to the disk
+- report success/error status
+*/
 void diskPut(support_t* sPtr)
 {
-    /*get block from user space to dma buffer*/
     int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;  /*put data at this address to DMA buffer first*/
     int diskNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
     int sectNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;
 
-    if (logicalAddr < KUSEG)    
+    /*error: address outside of the requesting U-proc’s logical address space*/
+    if (logicalAddr < KUSEG)        
         terminate(sPtr, NULL);
 
+    /*calculate DMA buffer*/
     int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2) + diskNo * PAGESIZE;
 
     /*copy logicalAddr content to DMA_buffer*/
     memcpy((char*) DMA_buffer, (char*) logicalAddr, PAGESIZE);
 
-
+    /*perform I/O*/
     int seek_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, SEEKCYL);
     if(seek_status != READY)
         sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -seek_status;
@@ -523,23 +516,35 @@ void diskPut(support_t* sPtr)
     }
 }
 
-
+/*
+diskGet: perform the disk read operation
+params: a pointer to the support struct passed from syscallhandler
+- get necessary parameters from the support struct
+- calculate the DMA_buffer address
+- perform an I/O operation to read data to the DMA buffer from the disk
+- copy contents to the specified address from the DMA buffer
+- report success/error status
+*/
 void diskGet(support_t* sPtr)
 {
     int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1;  /*copy data at DMA to this location*/
     int diskNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
     int sectNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;
 
+    /*error: address outside of the requesting U-proc’s logical address space*/
     if (logicalAddr < KUSEG)    
         terminate(sPtr, NULL);
 
+    /*calculate DMA buffer*/
     int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2) + diskNo * PAGESIZE;
 
+    /*perform I/O*/
     int seek_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, SEEKCYL);
     if(seek_status != READY)
         sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -seek_status;
     else
     {
+        /*seek successfully, read/write next*/
         int read_status = diskOperation(diskNo, (memaddr) DMA_buffer, sectNo, DISKREADBLK);
         if(read_status != READY)
             sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -read_status;
@@ -547,29 +552,38 @@ void diskGet(support_t* sPtr)
             sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = read_status;
     }
 
-
     /*copy DMA_buffer content to logicalAddr*/
     memcpy((char*) logicalAddr, (char*) DMA_buffer, PAGESIZE);
 }
 
-
+/*
+flashPut: perform the flash write operation
+params: a pointer to the support struct passed from syscallhandler
+- get necessary parameters from the support struct
+- calculate the DMA_buffer address
+- copy contents from the specified address to the DMA buffer
+- perform an I/O operation to write data inside the DMA buffer to the flash
+- report success/error status
+*/
 void flashPut(support_t* sPtr)
 {
     int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1; 
     int flashNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a2;
-    int blockNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;    /*need check whether blockNo falls in range*/        
+    int blockNo = sPtr->sup_exceptState[GENERALEXCEPT].s_a3;  
 
     device_t* flash_dev_reg = DEVREGBASE + (FLASHINT - 3) * DEVREGINTSCALE + flashNo * DEVREGDEVSCALE;
     unsigned int maxblock = flash_dev_reg->d_data1 & MAXBLOCKMASK;
+
+    /*error: address outside of the requesting U-proc’s logical address space
+    or block outside of [0..(MAXBLOCK-1)]*/
     if (logicalAddr < KUSEG || blockNo < 0 || blockNo > (maxblock-1))    
         terminate(sPtr, NULL); 
-
 
     /*copy logicalAddr content to DMA_buffer*/
     int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2 + DEVPERINT * PAGESIZE) + flashNo * PAGESIZE ;
     memcpy((char*) DMA_buffer, (char*) logicalAddr, PAGESIZE);
 
-
+    /*perform I/O*/
     int status = flashOperation(flashNo, (memaddr) DMA_buffer, blockNo, WRITEBLK);
     if(status != READY)
         sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -status;
@@ -578,6 +592,15 @@ void flashPut(support_t* sPtr)
 
 }
 
+/*
+flashGet: perform the flash read operation
+params: a pointer to the support struct passed from syscallhandler
+- get necessary parameters from the support struct
+- calculate the DMA_buffer address
+- perform an I/O operation to read data to the DMA buffer from the flash
+- copy contents to the specified address from the DMA buffer
+- report success/error status
+*/
 void flashGet(support_t* sPtr)
 {
     int* logicalAddr = sPtr->sup_exceptState[GENERALEXCEPT].s_a1; 
@@ -587,11 +610,16 @@ void flashGet(support_t* sPtr)
 
     device_t* flash_dev_reg = DEVREGBASE + (FLASHINT - 3) * DEVREGINTSCALE + flashNo * DEVREGDEVSCALE;
     unsigned int maxblock = flash_dev_reg->d_data1 & MAXBLOCKMASK;
+
+    /*error: address outside of the requesting U-proc’s logical address space
+    or block outside of [0..(MAXBLOCK-1)]*/
     if (logicalAddr < KUSEG || blockNo < 0 || blockNo > (maxblock-1))    
         terminate(sPtr, NULL); 
 
-
+    /*calculate DMA buffer*/
     int* DMA_buffer = (SWAPPOOLADDR + PAGESIZE * UPROCMAX * 2 + DEVPERINT * PAGESIZE) + flashNo * PAGESIZE;
+
+    /*perform I/O*/
     int status = flashOperation(flashNo, (memaddr) DMA_buffer, blockNo, READBLK);
     if(status != READY)
         sPtr->sup_exceptState[GENERALEXCEPT].s_v0 = -status;

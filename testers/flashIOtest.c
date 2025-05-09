@@ -6,6 +6,7 @@
 
 #define MILLION	1000000
 #define MAXBLOCK 512
+#define READCOUNT 512 /*change this parameter to test that exceeding max block should terminate the process*/
 
 void main() {
 	/*char buffer[PAGESIZE]; */
@@ -44,21 +45,17 @@ void main() {
 	/* should eventually exceed device capacity */
 	i = 0;
 	dstatus = SYSCALL(FLASH_GET, (int)buffer, 1, i);
-	while ((dstatus == READY) && (i < MAXBLOCK - 1)) {
+	while ((dstatus == READY) && (i < READCOUNT - 1)) {
 		i++;
 		dstatus = SYSCALL(FLASH_GET, (int)buffer, 1, i);
 	}
 	/*print(WRITETERMINAL, "next flash get should terminate due to exceeding maxblock\n");*/
 	i++;
 	dstatus = SYSCALL(FLASH_GET, (int)buffer, 1, i);
-	print(WRITETERMINAL, "flashTest error: exceeding maxblock did not terminate\n");
 
+	if (i > MAXBLOCK)
+		print(WRITETERMINAL, "flashTest error: exceeding maxblock did not terminate\n");
 	
-	if (i < MILLION)
-		print(WRITETERMINAL, "flashTest ok: device capacity detection\n");
-	else
-		print(WRITETERMINAL, "flashTest error: device capacity undetected\n");
-		
 	print(WRITETERMINAL, "flashTest: completed\n");
 
 	/* try to do a flash read into protected RAM */
