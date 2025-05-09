@@ -1,3 +1,17 @@
+/******************************************************************************
+ * Module: deviceSupportDMA.h
+ * Description: Header file for DMA-based devices support
+ *
+ * Global functions:
+ * - diskOperation(): perform an operation on the specified disk using its device register
+ * - flashOperation(): perform an operation on the specified flash using its device register
+ *
+ * Dependencies:
+ * - const.h: System constants
+ * - types.h: System type definitions
+ * - initProc.h: Process initialization
+ ******************************************************************************/
+
 #ifndef DEVICESUPPORTDMA
 #define DEVICESUPPORTDMA
 

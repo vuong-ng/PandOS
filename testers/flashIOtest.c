@@ -6,7 +6,7 @@
 
 #define MILLION	1000000
 #define MAXBLOCK 512
-#define READCOUNT 512 /*change this parameter to test that exceeding max block should terminate the process*/
+#define READCOUNT 511 /*change this parameter to test that exceeding max block should terminate the process*/
 
 void main() {
 	/*char buffer[PAGESIZE]; */
