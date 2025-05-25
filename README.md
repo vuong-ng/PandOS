@@ -18,7 +18,8 @@ Level 6: The Delay Facility (Phase 5 – described in Chapter 6). This level pro
 
 Level 7: Cooperating User Processes (Phase 6 – described in Chapter 7). This level introduces a shared memory space and user-level synchronization primitives to facilitate cooperating processes.
 
-To run and test the whole 5 phases, do the following:
+## Run project
+To run and test 5 phases, do the following:
 
 1. cd into `testers` and implement `make`
 > cd testers
@@ -33,4 +34,5 @@ To run and test the whole 5 phases, do the following:
 3. Run in phase 5 calling `umps3`
 > umps3
 
+There are sample testers processes provided in `testers` but you are welcome to add more processes.
 Written by Long Pham & Vuong Nguyen.
