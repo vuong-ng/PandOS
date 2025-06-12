@@ -4,15 +4,15 @@ Pandos is a major educational project that we built in our Operating System cour
 
 Level 0: The base hardware of μMPS3.
 
-Level 1: The additional services provided in BIOS. This includes the services pro- vided by the BIOS-Excpt handler, the BIOS-TLB-Refill handler, and the additional BIOS services/instructions (i.e. LDST, LDCXT, PANIC, and HALT).
+Level 1: The additional services provided in BIOS. This includes the services provided by the BIOS-Excpt handler, the BIOS-TLB-Refill handler, and the additional BIOS services/instructions (i.e. LDST, LDCXT, PANIC, and HALT).
 
 Level 2: The Queues Manager (Phase 1 – described in Chapter 2). Based on the key operating systems concept that active entities at one layer are just data structures at lower layers, this layer supports the management of queues of structures: pcb’s.
 
 Level 3: The Kernel (Phase 2 – described in Chapter 3). This level implements eight new kernel-mode process management and synchronization primitives in addition to multiprogramming, a process scheduler, device interrupt han- dlers, and deadlock detection.
 
-Level 4: The Support Level - The Basics (Phase 3 – described in Chapter 4). Level 3 is extended to support a system that can support multiple user-level pro- cesses that each run in their own virtual address space. Furthermore, support is provided to read/write to character-oriented devices.
+Level 4: The Support Level - The Basics (Phase 3 – described in Chapter 4). Level 3 is extended to support a system that can support multiple user-level processes that each run in their own virtual address space. Furthermore, support is provided to read/write to character-oriented devices.
 
-Level 5: DMA Device Support (Phase 4 – described in Chapter 5). An extension of Level 4 providing I/O support for DMA devices: disk drives and flash de- vices. Furthermore, this level optionally implements a more realistic back- ing store implementation.
+Level 5: DMA Device Support (Phase 4 – described in Chapter 5). An extension of Level 4 providing I/O support for DMA devices: disk drives and flash devices. Furthermore, this level optionally implements a more realistic back- ing store implementation.
 
 Level 6: The Delay Facility (Phase 5 – described in Chapter 6). This level provides the Support Level with a sleep/delay facility.
 
